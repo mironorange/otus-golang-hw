@@ -19,6 +19,9 @@ func Unpack(src string) (string, error) {
 	sequences := make([]byte, 0)
 	for _, char := range src {
 		if unicode.IsDigit(char) {
+			if len(sc) <= 0 {
+				return "", ErrInvalidString
+			}
 			ml, err := strconv.Atoi(string(char))
 			if err != nil {
 				return "", ErrInvalidString
