@@ -9,10 +9,10 @@ import (
 
 var (
 	ErrInvalidString = errors.New("invalid string")
-	SpecialSymbols   = map[rune]int{
-		'n': 1,
-		'r': 1,
-		't': 1,
+	SpecialSymbols   = map[rune]struct{}{
+		'n': {},
+		'r': {},
+		't': {},
 	}
 )
 
