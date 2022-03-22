@@ -2,7 +2,6 @@ package hw02unpackstring
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
@@ -23,15 +22,12 @@ func Unpack(src string) (string, error) {
 	}
 
 	var s strings.Builder
-	sc := make([]rune, 0)
 
-	ml := 1
 	m := false // Shielding mode
+	sc := make([]rune, 0)
+	ml := 1
 
 	for _, char := range src {
-
-		fmt.Println(char)
-
 		// Если повстречалась цифра или включен режим экранирования
 		if unicode.IsDigit(char) && !m {
 			if len(sc) == 0 {

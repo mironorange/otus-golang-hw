@@ -7,6 +7,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestEmoji(t *testing.T) {
+	input := "Девушка🔥3"
+	result, _ := Unpack(input)
+	require.Equal(t, result, "Девушка🔥🔥🔥")
+}
+
+func TestCyrillic(t *testing.T) {
+	input := "П1р3вет4"
+	result, _ := Unpack(input)
+	require.Equal(t, result, "Прррветттт")
+}
+
 func TestUnpack(t *testing.T) {
 	tests := []struct {
 		input    string
