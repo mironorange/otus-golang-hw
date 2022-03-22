@@ -1,9 +1,10 @@
 package hw02unpackstring
 
 import (
-	"bytes"
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 	"unicode"
 )
 
@@ -21,13 +22,18 @@ func Unpack(src string) (string, error) {
 		return "", nil
 	}
 
-	sc := make([]byte, 0)
+	var s strings.Builder
+	sc := make([]rune, 0)
+
 	ml := 1
-	shielding := false // Shielding mode
-	sequences := make([]byte, 0)
+	m := false // Shielding mode
+
 	for _, char := range src {
+
+		fmt.Println(char)
+
 		// Если повстречалась цифра или включен режим экранирования
-		if unicode.IsDigit(char) && !shielding {
+		if unicode.IsDigit(char) && !m {
 			if len(sc) == 0 {
 				return "", ErrInvalidString
 			}
@@ -35,36 +41,36 @@ func Unpack(src string) (string, error) {
 			if err != nil {
 				return "", ErrInvalidString
 			}
-			sequences = append(sequences, bytes.Repeat(sc, ml)...)
+			s.WriteString(strings.Repeat(string(sc), ml))
 			sc = sc[:0]
 			continue
 		}
 		// Если встретился обратный слеш, то проигнорировать символ и включить режим экранирования
-		if char == '\\' && !shielding {
+		if char == '\\' && !m {
 			if len(sc) > 0 {
-				sequences = append(sequences, sc...)
+				s.WriteString(string(sc))
 				ml = 1
 				sc = sc[:0]
 			}
-			shielding = true
+			m = true
 			continue
 		}
 		// В любом ином случае рассматриваем как символ, который нужно распаковать
 		if len(sc) > 0 {
-			sequences = append(sequences, sc...)
+			s.WriteString(string(sc))
 			ml = 1
 			sc = sc[:0]
 		}
-		if _, ok := SpecialSymbols[char]; ok && shielding {
+		if _, ok := SpecialSymbols[char]; ok && m {
 			sc = append(sc, '\\')
 		}
-		sc = append(sc, byte(char))
-		shielding = false
+		sc = append(sc, char)
+		m = false
 	}
 
 	if len(sc) > 0 {
-		sequences = append(sequences, bytes.Repeat(sc, ml)...)
+		s.WriteString(strings.Repeat(string(sc), ml))
 	}
 
-	return string(sequences), nil
+	return s.String(), nil
 }
