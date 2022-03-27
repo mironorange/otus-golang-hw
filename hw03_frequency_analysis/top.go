@@ -11,52 +11,65 @@ type dimension struct {
 	count int
 }
 
-// Change to true if needed.
-var taskWithAsteriskIsCompleted = true
 var reg = regexp.MustCompile(`\s+`)
 
-func Top10(text string) []string {
+func Top10(text string, strictCleaning bool) []string {
 	if len(text) == 0 {
 		return make([]string, 0)
 	}
 
-	counter := make(map[string]int)
+	cleaningWords := ClearAndSplit(text, strictCleaning)
+	wordsAndRepetition := countWordsAndRepetition(cleaningWords)
+	words := get10TopCountedWords(wordsAndRepetition)
 
-	safe := reg.ReplaceAllString(text, " ")
+	return words
+}
 
-	for _, v := range strings.Split(safe, " ") {
-		if taskWithAsteriskIsCompleted {
-			if v == "-" {
+func ClearAndSplit(text string, strictCleaning bool) []string {
+	words := make([]string, 0)
+	safeText := reg.ReplaceAllString(text, " ")
+	for _, word := range strings.Split(safeText, " ") {
+		if strictCleaning {
+			if word == "-" {
 				continue
 			}
-			v = strings.Trim(v, ".")
-			v = strings.ToLower(v)
+			word = strings.TrimFunc(word, func(character rune) bool {
+				return character == '.' || character == '!' || character == ','
+			})
+			word = strings.ToLower(word)
 		}
-		counter[v]++
+		words = append(words, word)
 	}
+	return words
+}
 
-	ds := make([]dimension, 0)
+func countWordsAndRepetition(words []string) []dimension {
+	wordsAndRepetition := make([]dimension, 0)
+	counter := make(map[string]int)
+	for _, word := range words {
+		counter[word]++
+	}
 	for value, key := range counter {
 		d := dimension{
 			word:  value,
 			count: key,
 		}
-		ds = append(ds, d)
+		wordsAndRepetition = append(wordsAndRepetition, d)
 	}
+	return wordsAndRepetition
+}
 
-	sort.Slice(ds, func(i, j int) bool {
-		if ds[i].count == ds[j].count {
-			return strings.Compare(ds[i].word, ds[j].word) < 0
+func get10TopCountedWords(wordsAndRepetition []dimension) []string {
+	sort.Slice(wordsAndRepetition, func(i, j int) bool {
+		if wordsAndRepetition[i].count == wordsAndRepetition[j].count {
+			return strings.Compare(wordsAndRepetition[i].word, wordsAndRepetition[j].word) < 0
 		}
-		return ds[i].count > ds[j].count
+		return wordsAndRepetition[i].count > wordsAndRepetition[j].count
 	})
 
 	words := make([]string, 0)
-
-	// fmt.Println(ds)
-
-	for i := 0; i < len(ds) && i < 10; i++ {
-		words = append(words, ds[i].word)
+	for i := 0; i < len(wordsAndRepetition) && i < 10; i++ {
+		words = append(words, wordsAndRepetition[i].word)
 	}
 
 	return words
