@@ -16,7 +16,7 @@ var taskWithAsteriskIsCompleted = true
 var reg = regexp.MustCompile(`\s+`)
 
 func Top10(text string) []string {
-	if len(text) <= 0 {
+	if len(text) == 0 {
 		return make([]string, 0)
 	}
 
@@ -25,7 +25,6 @@ func Top10(text string) []string {
 	safe := reg.ReplaceAllString(text, " ")
 
 	for _, v := range strings.Split(safe, " ") {
-
 		if taskWithAsteriskIsCompleted {
 			if v == "-" {
 				continue
@@ -33,7 +32,6 @@ func Top10(text string) []string {
 			v = strings.Trim(v, ".")
 			v = strings.ToLower(v)
 		}
-
 		counter[v]++
 	}
 
