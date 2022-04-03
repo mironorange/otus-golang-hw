@@ -347,6 +347,25 @@ func TestMoveToFrontDoublyLinkedListItem(t *testing.T) {
 			expectedFront: 2,
 			expectedBack:  7,
 		},
+		{
+			build: func() (DoublyLinkedLister, *DLListItem) {
+				dll := NewDoublyLinkedList(3)
+				repeat := dll.PushFront(1)
+				dll.PushFront(3)
+				dll.MoveToFront(repeat)
+				dll.PushFront(5)
+				dll.MoveToFront(repeat)
+				dll.PushFront(7)
+				dll.MoveToFront(repeat)
+				dll.PushFront(9)
+				dll.MoveToFront(repeat)
+				dll.PushFront(11)
+				dll.MoveToFront(repeat)
+				return dll, repeat
+			},
+			expectedFront: 1,
+			expectedBack:  9,
+		},
 	}
 
 	for _, tc := range tests {

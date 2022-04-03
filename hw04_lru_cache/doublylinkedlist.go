@@ -200,7 +200,7 @@ func (dll *DLList) MoveToFront(i *DLListItem) {
 		nextItem := i.Next
 		// Скорректируем связи элементов очереди
 		nextItem.Prev = prevItem
-		nextItem.Next = nextItem
+		prevItem.Next = nextItem
 		// Уберем указатели у удаляемого элемента
 		i.Prev = listItemNilPoiner
 		i.Next = listItemNilPoiner
@@ -233,8 +233,10 @@ func (dll *DLList) MoveToFront(i *DLListItem) {
 	// - новый элемент будет связан с предыдущем
 	case dll.lenght == 1:
 		prevHeadItem := dll.head
+		curItem.Prev = listItemNilPoiner
 		curItem.Next = prevHeadItem
 		prevHeadItem.Prev = curItem
+		prevHeadItem.Next = listItemNilPoiner
 		dll.head = curItem
 		dll.tail = prevHeadItem
 		dll.lenght++

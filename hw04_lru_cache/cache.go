@@ -1,5 +1,7 @@
 package hw04lrucache
 
+import "fmt"
+
 type Key string
 
 type Cache interface {
@@ -26,6 +28,9 @@ func (cache *lruCache) Get(key Key) (interface{}, bool) {
 	queueItem, ok := cache.items[key]
 	if ok {
 		isExists = true
+		fmt.Println(queueItem)
+		fmt.Println(queueItem.Next)
+		fmt.Println(queueItem.Prev)
 		item := queueItem.Value
 		value = item.(*cacheItem).value
 		cache.queue.MoveToFront(queueItem)
@@ -49,10 +54,12 @@ func (cache *lruCache) Set(key Key, value interface{}) bool {
 	// Если операция добавления элемента приведет к переполнению списка
 	// Перед тем как добавлять новый элемент необходимо
 	// Вытолкнуть последний элемент списка
-	if queue.Len() >= (cache.capacity + 1) {
+	if queue.Len() >= cache.capacity {
 		back, err := queue.Back()
-		if err != nil {
+		if err == nil {
+			key := back.Value.(*cacheItem).key
 			queue.Remove(back)
+			delete(cache.items, key)
 		}
 	}
 	queueItem = queue.PushFront(item)
