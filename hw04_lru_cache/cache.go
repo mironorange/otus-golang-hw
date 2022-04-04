@@ -19,7 +19,6 @@ type cacheItem struct {
 	value interface{}
 }
 
-// Получить ранее установленное значение кеша и флаг его присутствия
 func (cache *lruCache) Get(key Key) (interface{}, bool) {
 	var value interface{}
 	isExists := false
@@ -33,7 +32,6 @@ func (cache *lruCache) Get(key Key) (interface{}, bool) {
 	return value, isExists
 }
 
-// Установить значение кеша
 func (cache *lruCache) Set(key Key, value interface{}) bool {
 	queue := cache.queue
 	isExists := false
@@ -62,23 +60,17 @@ func (cache *lruCache) Set(key Key, value interface{}) bool {
 	return isExists
 }
 
-// Очистить кеш
 func (cache *lruCache) Clear() {
-	item := cache.queue.Front()
-	if item == nil {
-		return
-	}
-	for i := item; i != nil; i = i.Next {
+	for i := cache.queue.Front(); i != nil; i = i.Next {
 		key := i.Value.(*cacheItem).key
 		delete(cache.items, key)
 	}
 }
 
-// Инициировать новое значение кеша
 func NewCache(capacity int) Cache {
 	return &lruCache{
 		capacity: capacity,
-		queue:    NewDoublyLinkedList(capacity),
+		queue:    NewList(),
 		items:    make(map[Key]*ListItem, capacity),
 	}
 }

@@ -14,7 +14,7 @@ var (
 
 func TestList(t *testing.T) {
 	t.Run("empty list", func(t *testing.T) {
-		l := NewList(30)
+		l := NewList()
 
 		require.Equal(t, 0, l.Len())
 		require.Nil(t, l.Front())
@@ -22,7 +22,7 @@ func TestList(t *testing.T) {
 	})
 
 	t.Run("complex", func(t *testing.T) {
-		l := NewList(30)
+		l := NewList()
 
 		l.PushFront(10) // [10]
 		l.PushBack(20)  // [10, 20]
@@ -56,9 +56,9 @@ func TestList(t *testing.T) {
 	})
 }
 
-// Если в список добавлять элементы, то его размер ростет
+// Если в список добавлять элементы, то его размер увеличивается.
 func TestDoublyLinkedLenght(t *testing.T) {
-	l := NewList(10)
+	l := NewList()
 	expected := 0
 	require.Equal(t, l.Len(), expected)
 
@@ -74,7 +74,7 @@ func TestDoublyLinkedLenght(t *testing.T) {
 // Если в список добавлять элеенты сверху
 // - то они будут связаны друг с другом по мере их добавления
 func TestPushFrontToDoublyLinkedList(t *testing.T) {
-	l := NewList(3)
+	l := NewList()
 
 	l.PushFront(expectedTailValue)
 	l.PushFront(expectedMiddleValue)
@@ -93,7 +93,7 @@ func TestPushFrontToDoublyLinkedList(t *testing.T) {
 // Если в список добавлять элементы снизу
 // - то они будут связаны друг с другом по мере их добавления
 func TestPushBackToDoublyLinkedList(t *testing.T) {
-	l := NewList(3)
+	l := NewList()
 
 	l.PushBack(expectedHeadValue)
 	l.PushBack(expectedMiddleValue)
@@ -109,129 +109,6 @@ func TestPushBackToDoublyLinkedList(t *testing.T) {
 	require.Equal(t, expectedHeadElem.Value, expectedHeadValue)
 }
 
-// Если у списка пустая емкость
-// - то в него нельзя добавить элементы
-func TestDoublyLinkedListZeroCapacity(t *testing.T) {
-	tests := []struct {
-		build          func() List
-		expectedLength int
-	}{
-		{
-			build: func() List {
-				l := NewList(0)
-				l.PushFront(1)
-				return l
-			},
-			expectedLength: 0,
-		},
-		{
-			build: func() List {
-				l := NewList(0)
-				l.PushBack(5)
-				return l
-			},
-			expectedLength: 0,
-		},
-		{
-			build: func() List {
-				l := NewList(0)
-				l.PushFront(1)
-				l.PushBack(5)
-				return l
-			},
-			expectedLength: 0,
-		},
-	}
-
-	for _, tc := range tests {
-		l := tc.build()
-		require.Equal(t, l.Len(), tc.expectedLength)
-
-		result := l.Front()
-		require.Nil(t, result)
-
-		result = l.Back()
-		require.Nil(t, result)
-	}
-}
-
-// Если в списке один элемент
-// - то он будет возвращаться и с вершины и с конца
-func TestDoublyLinkedListOverflow(t *testing.T) {
-	tests := []struct {
-		build          func() List
-		expectedFront  int
-		expectedBack   int
-		expectedLength int
-	}{
-		{
-			build: func() List {
-				l := NewList(4)
-				l.PushFront(1)
-				l.PushFront(3)
-				l.PushFront(5)
-				l.PushFront(7)
-				l.PushFront(9)
-				l.PushFront(11)
-				return l
-			},
-			expectedFront:  11,
-			expectedBack:   5,
-			expectedLength: 4,
-		},
-		{
-			build: func() List {
-				l := NewList(4)
-				l.PushBack(13)
-				l.PushBack(15)
-				l.PushBack(17)
-				l.PushBack(19)
-				l.PushBack(21)
-				l.PushBack(23)
-				return l
-			},
-			expectedFront:  17,
-			expectedBack:   23,
-			expectedLength: 4,
-		},
-		{
-			build: func() List {
-				l := NewList(1)
-				l.PushFront(1)
-				l.PushFront(3)
-				l.PushFront(5)
-				return l
-			},
-			expectedFront:  5,
-			expectedBack:   5,
-			expectedLength: 1,
-		},
-		{
-			build: func() List {
-				l := NewList(1)
-				l.PushBack(13)
-				l.PushBack(15)
-				l.PushBack(17)
-				return l
-			},
-			expectedFront:  17,
-			expectedBack:   17,
-			expectedLength: 1,
-		},
-	}
-
-	for _, tc := range tests {
-		l := tc.build()
-		require.Equal(t, l.Len(), tc.expectedLength)
-
-		result := l.Front()
-		require.Equal(t, result.Value, tc.expectedFront)
-
-		result = l.Back()
-		require.Equal(t, result.Value, tc.expectedBack)
-	}
-}
-
 // Если в списке один элемент
 // - то он будет возвращаться и с вершины и с конца
 func TestDoublyLinkedListWithOneElement(t *testing.T) {
@@ -241,7 +118,7 @@ func TestDoublyLinkedListWithOneElement(t *testing.T) {
 	}{
 		{
 			build: func() List {
-				l := NewList(3)
+				l := NewList()
 				l.PushFront(1)
 				return l
 			},
@@ -249,7 +126,7 @@ func TestDoublyLinkedListWithOneElement(t *testing.T) {
 		},
 		{
 			build: func() List {
-				l := NewList(3)
+				l := NewList()
 				l.PushBack(2)
 				return l
 			},
@@ -270,7 +147,7 @@ func TestDoublyLinkedListWithOneElement(t *testing.T) {
 // Если попытаться получить вершину пустого списка
 // - то получаем Nil в ответ
 func TestEmptyDoublyLinkedListHead(t *testing.T) {
-	l := NewList(1)
+	l := NewList()
 	i := l.Front()
 	require.Nil(t, i, listItemNilPoiner)
 }
@@ -278,7 +155,7 @@ func TestEmptyDoublyLinkedListHead(t *testing.T) {
 // Если попытаться получить хвост пустого списка
 // - то получаем Nil в ответ
 func TestEmptyDoublyLinkedTail(t *testing.T) {
-	l := NewList(1)
+	l := NewList()
 	i := l.Back()
 	require.Equal(t, i, listItemNilPoiner)
 }
@@ -294,11 +171,11 @@ func TestRemoveDoublyLinkedListItem(t *testing.T) {
 	}{
 		{
 			build: func() (List, *ListItem) {
-				l := NewList(3)
-				l.PushFront(3)
-				l.PushFront(5)
-				firstDllItem := l.PushFront(1)
-				return l, firstDllItem
+				l := NewList()
+				l.PushFront(3)                 // [3]
+				l.PushFront(5)                 // [5, 3]
+				firstDllItem := l.PushFront(1) // [1, 5, 3]
+				return l, firstDllItem         // [5, 3]
 			},
 			expectedFront:  5,
 			expectedBack:   3,
@@ -306,7 +183,7 @@ func TestRemoveDoublyLinkedListItem(t *testing.T) {
 		},
 		{
 			build: func() (List, *ListItem) {
-				l := NewList(3)
+				l := NewList()
 				lastDllItem := l.PushFront(6)
 				l.PushFront(2)
 				l.PushFront(4)
@@ -318,7 +195,7 @@ func TestRemoveDoublyLinkedListItem(t *testing.T) {
 		},
 		{
 			build: func() (List, *ListItem) {
-				l := NewList(7)
+				l := NewList()
 				l.PushFront(1)
 				l.PushFront(3)
 				middleDllItem := l.PushBack(2)
@@ -333,17 +210,17 @@ func TestRemoveDoublyLinkedListItem(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		dll, input := tc.build()
+		l, input := tc.build()
 
-		dll.Remove(input)
+		l.Remove(input)
 
-		result := dll.Front()
+		result := l.Front()
 		require.Equal(t, result.Value, tc.expectedFront)
 
-		result = dll.Back()
+		result = l.Back()
 		require.Equal(t, result.Value, tc.expectedBack)
 
-		require.Equal(t, dll.Len(), tc.expectedLength)
+		require.Equal(t, l.Len(), tc.expectedLength)
 	}
 }
 
@@ -357,69 +234,68 @@ func TestMoveToFrontDoublyLinkedListItem(t *testing.T) {
 	}{
 		{
 			build: func() (List, *ListItem) {
-				l := NewList(3)
-				l.PushFront(3)
-				l.PushFront(5)
-				firstDllItem := l.PushFront(1)
-				return l, firstDllItem
+				l := NewList()
+				l.PushFront(3)                 // [3]
+				l.PushFront(5)                 // [5, 3]
+				firstDllItem := l.PushFront(1) // [1, 5, 3]
+				return l, firstDllItem         // [1, 5, 3]
 			},
 			expectedFront: 1,
 			expectedBack:  3,
 		},
 		{
 			build: func() (List, *ListItem) {
-				l := NewList(3)
-				lastDllItem := l.PushFront(6)
-				l.PushFront(2)
-				l.PushFront(4)
-				return l, lastDllItem
+				l := NewList()
+				lastDllItem := l.PushFront(6) // [6]
+				l.PushFront(2)                // [2, 6]
+				l.PushFront(4)                // [4, 2, 6]
+				return l, lastDllItem         // [6, 4, 2]
 			},
 			expectedFront: 6,
 			expectedBack:  2,
 		},
 		{
 			build: func() (List, *ListItem) {
-				l := NewList(7)
-				l.PushFront(1)
-				l.PushFront(3)
-				middleDllItem := l.PushBack(2)
-				l.PushBack(5)
-				l.PushBack(7)
-				return l, middleDllItem
+				l := NewList()
+				l.PushFront(1)                 // [1]
+				l.PushFront(3)                 // [3, 1]
+				middleDllItem := l.PushBack(2) // [3, 1, 2]
+				l.PushBack(5)                  // [3, 1, 2, 5]
+				l.PushBack(7)                  // [3, 1, 2, 5, 7]
+				return l, middleDllItem        // [2, 3, 1, 5, 7]
 			},
 			expectedFront: 2,
 			expectedBack:  7,
 		},
 		{
 			build: func() (List, *ListItem) {
-				l := NewList(3)
-				repeat := l.PushFront(1)
-				l.PushFront(3)
-				l.MoveToFront(repeat)
-				l.PushFront(5)
-				l.MoveToFront(repeat)
-				l.PushFront(7)
-				l.MoveToFront(repeat)
-				l.PushFront(9)
-				l.MoveToFront(repeat)
-				l.PushFront(11)
-				l.MoveToFront(repeat)
+				l := NewList()
+				repeat := l.PushFront(1) // [1]
+				l.PushFront(3)           // [3, 1]
+				l.MoveToFront(repeat)    // [1, 3]
+				l.PushFront(5)           // [5, 1, 3]
+				l.MoveToFront(repeat)    // [1, 5, 3]
+				l.PushFront(7)           // [7, 1, 5, 3]
+				l.MoveToFront(repeat)    // [1, 7, 5, 3]
+				l.PushFront(9)           // [9, 1, 7, 5, 3]
+				l.MoveToFront(repeat)    // [1, 9, 7, 5, 3]
+				l.PushFront(11)          // [11, 1, 9, 7, 5, 3]
+				l.PushFront(13)          // [13, 11, 1, 9, 7, 5, 3]
 				return l, repeat
 			},
 			expectedFront: 1,
-			expectedBack:  9,
+			expectedBack:  3,
 		},
 	}
 
 	for _, tc := range tests {
-		dll, input := tc.build()
+		l, input := tc.build()
+		l.MoveToFront(input)
 
-		dll.MoveToFront(input)
-
-		result := dll.Front()
+		result := l.Front()
 		require.Equal(t, result.Value, tc.expectedFront)
 
-		result = dll.Back()
+		result = l.Back()
 		require.Equal(t, result.Value, tc.expectedBack)
 	}
 }
@@ -427,7 +303,7 @@ func TestMoveToFrontDoublyLinkedListItem(t *testing.T) {
 // Если из очереди сделать слайс
 // - то порядок элементов в нем будет соответсвовать порядку элементов в списке
 func TestGetAllDoublyLinkedListItems(t *testing.T) {
-	l := NewList(10)
+	l := NewList()
 	expected := []interface{}{1, 3, 5, 7, 9}
 
 	for _, value := range expected {
@@ -439,7 +315,7 @@ func TestGetAllDoublyLinkedListItems(t *testing.T) {
 // Если из очереди удалить все элементы
 // - то в очереде их не будет, вершина и хвост будут ссылаться на пустоту
 func TestRemoveAllDoublyLinkedListItems(t *testing.T) {
-	l := NewList(10)
+	l := NewList()
 	input := []interface{}{1, 3, 5, 7, 9}
 
 	items := make([]*ListItem, 0)

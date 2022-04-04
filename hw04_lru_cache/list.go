@@ -27,140 +27,131 @@ type ListItem struct {
 }
 
 type list struct {
-	capacity int
-	lenght   int
-	head     *ListItem
-	tail     *ListItem
+	length int
+	head   *ListItem
+	tail   *ListItem
 }
 
-// Возвращает количество элементов в списке
 func (l *list) Len() int {
-	return l.lenght
+	return l.length
 }
 
-// Возвращает элемент, находящийся сверху списка или ошибку если элемента нет
 func (l *list) Front() *ListItem {
 	switch {
-	case l.lenght == 0:
+	case l.length == 0:
 		return listItemNilPoiner
-	case l.lenght == 1 && l.head != nil:
+	case l.length == 1 && l.head != nil:
 		return l.head
-	case l.lenght == 1 && l.tail != nil:
+	case l.length == 1 && l.tail != nil:
 		return l.tail
 	default:
 		return l.head
 	}
 }
 
-// Возвращает элемент, находящийся в конце списка или ошибку если элемента нет
 func (l *list) Back() *ListItem {
 	switch {
-	case l.lenght == 0:
+	case l.length == 0:
 		return listItemNilPoiner
-	case l.lenght == 1 && l.tail != nil:
+	case l.length == 1 && l.tail != nil:
 		return l.tail
-	case l.lenght == 1 && l.head != nil:
+	case l.length == 1 && l.head != nil:
 		return l.head
 	default:
 		return l.tail
 	}
 }
 
-// Добавляет элемент на вершину списка
+func (l *list) pushToFront(i *ListItem) *ListItem {
+	// Если элементов не было
+	// - то добавляемый элемент одновременно является и первым и последним
+	if l.length == 0 {
+		l.tail = i
+		l.head = i
+		l.length++
+		return i
+	}
+
+	// Если был один элемент в списке
+	// - Существующий элемент списка станет последним
+	// - Добавляемый элемент будет первым и связан с существующим
+	if l.length == 1 {
+		// Сохраним первый элемент, так как он будет будет завершать список
+		// И встанет после текущего
+		prev := l.head
+		// Обнулим указатели на головы перед операцией связывания
+		l.head = listItemNilPoiner
+		l.tail = listItemNilPoiner
+		// Добавляемый элемент будет первым, он ссылается только на следующий элемент
+		i.Next = prev
+		i.Prev = listItemNilPoiner
+		l.head = i
+		// Элемент, который был в списке станет последним, он ссылается на предыдущий
+		prev.Prev = i
+		prev.Next = listItemNilPoiner
+		l.tail = prev
+		l.length++
+		return i
+	}
+
+	prev := l.head
+	l.head = i
+	i.Next = prev
+	prev.Prev = i
+	l.length++
+
+	return i
+}
+
 func (l *list) PushFront(v interface{}) *ListItem {
-	if l.capacity <= 0 {
-		return listItemNilPoiner
-	}
-
-	curItem := NewDoublyLinkedListItem(v)
-
-	switch {
-	// Если элементов не было, то добавляемый элемент одновременно является и первым и последним
-	case l.lenght == 0:
-		l.tail = curItem
-		l.head = curItem
-		l.lenght++
-
-	// Если был один элемент в списке
-	// - первый элемент заменит последний
-	// - новый элемент будет связан с предыдущем
-	case l.lenght == 1:
-		prevHeadItem := l.head
-		curItem.Next = prevHeadItem
-		prevHeadItem.Prev = curItem
-		l.head = curItem
-		l.tail = prevHeadItem
-		l.lenght++
-
-	// В любой иной ситуации связываем новый элемент с текущей вершиной и заменяем им вершину
-	default:
-		prevHeadItem := l.head
-		curItem.Next = prevHeadItem
-		prevHeadItem.Prev = curItem
-		l.head = curItem
-		l.lenght++
-	}
-
-	// Если после добавления элемента, размер превышает его емкость, срезать конец
-	if l.lenght > l.capacity {
-		prevTailItem := l.tail
-		l.tail = prevTailItem.Prev
-		l.tail.Next = listItemNilPoiner
-		prevTailItem.Prev = listItemNilPoiner
-		l.lenght--
-	}
-
-	return curItem
+	return l.pushToFront(newListItem(v))
 }
 
-// Добавляет элемент в конец списка
 func (l *list) PushBack(v interface{}) *ListItem {
-	if l.capacity <= 0 {
-		return listItemNilPoiner
-	}
-
-	curItem := NewDoublyLinkedListItem(v)
-
-	switch {
-	// Если элементов нет, то добавляемый элемент одновременно является и первым и последним
-	case l.lenght == 0:
-		l.tail = curItem
-		l.head = curItem
-		l.lenght++
-
-	// Если был один элемент в списке
-	// - последний элемент заменит первый
-	// - новый элемент будет связан с предыдущем
-	case l.lenght == 1:
-		prevTailItem := l.tail
-		curItem.Prev = prevTailItem
-		prevTailItem.Next = curItem
-		l.head = prevTailItem
-		l.tail = curItem
-		l.lenght++
-
-	// В любой иной ситуации связываем новый элемент с последним и заменяем им конец списка
-	default:
-		prevTailItem := l.tail
-		curItem.Prev = prevTailItem
-		prevTailItem.Next = curItem
-		l.tail = curItem
-		l.lenght++
-	}
-
-	// Если после добавления элемента, размер превышает его емкость, срезать конец
-	if l.lenght > l.capacity {
-		prevHeadItem := l.head
-		l.head = prevHeadItem.Next
-		l.head.Prev = listItemNilPoiner
-		prevHeadItem.Next = listItemNilPoiner
-		l.lenght--
-	}
-
-	return curItem
+	return l.pushToBack(newListItem(v))
 }
 
-// Удалить элемент из списка
+func (l *list) pushToBack(i *ListItem) *ListItem {
+	// Если элементов не было
+	// - то добавляемый элемент одновременно является и первым и последним
+	if l.length == 0 {
+		l.tail = i
+		l.head = i
+		l.length++
+		return i
+	}
+
+	// Если был один элемент в списке
+	// - Существующий элемент списка станет последним
+	// - Добавляемый элемент будет первым и связан с существующим
+	if l.length == 1 {
+		// Сохраним первый элемент, так как он будет будет завершать список
+		// И встанет после текущего
+		prev := l.tail
+		// Обнулим указатели на головы перед операцией связывания
+		l.head = listItemNilPoiner
+		l.tail = listItemNilPoiner
+		// Добавляемый элемент будет первым, он ссылается только на следующий элемент
+		i.Next = listItemNilPoiner
+		i.Prev = prev
+		l.tail = i
+		// Элемент, который был в списке станет последним, он ссылается на предыдущий
+		prev.Prev = listItemNilPoiner
+		prev.Next = i
+		l.head = prev
+		l.length++
+		return i
+	}
+
+	prev := l.tail
+	i.Prev = prev
+	prev.Next = i
+	l.tail = i
+	l.length++
+
+	return i
+}
+
 func (l *list) Remove(i *ListItem) {
 	switch {
 	// Если это элемент посередине
@@ -170,27 +161,31 @@ func (l *list) Remove(i *ListItem) {
 		nextItem := i.Next
 		// Скорректируем связи элементов очереди
 		nextItem.Prev = prevItem
-		nextItem.Next = nextItem
-		// Уберем указатели у удаляемого элемента
-		i.Prev = listItemNilPoiner
-		i.Next = listItemNilPoiner
-		l.lenght--
+		prevItem.Next = nextItem
+		l.length--
+
+	// Если в списке единственный элемент
+	case l.length == 1:
+		l.head = listItemNilPoiner
+		l.tail = listItemNilPoiner
+		l.length--
 
 	// Если это первый элемент
 	case i.Prev == nil && i.Next != nil:
 		l.head = i.Next
-		i.Next = listItemNilPoiner
-		l.lenght--
+		l.length--
 
 	// Если это последний элемент
 	case i.Prev != nil && i.Next == nil:
 		l.tail = i.Prev
-		i.Prev = listItemNilPoiner
-		l.lenght--
+		l.length--
 	}
+
+	// Уберем указатели у удаляемого элемента
+	i.Prev = listItemNilPoiner
+	i.Next = listItemNilPoiner
 }
 
-// Удалить элемент из списка
 func (l *list) MoveToFront(i *ListItem) {
 	switch {
 	// Если это элемент посередине, то очищаем ссылки и переносим на вершину списка
@@ -204,7 +199,7 @@ func (l *list) MoveToFront(i *ListItem) {
 		// Уберем указатели у удаляемого элемента
 		i.Prev = listItemNilPoiner
 		i.Next = listItemNilPoiner
-		l.lenght--
+		l.length--
 
 	// Если это первый элемент, то он уже на вершине списка
 	case i.Prev == nil && i.Next != nil:
@@ -213,79 +208,32 @@ func (l *list) MoveToFront(i *ListItem) {
 	// Если это последний элемент, то очищаем ссылки и переносим на вершину списка
 	case i.Prev != nil && i.Next == nil:
 		l.tail = i.Prev
+		l.tail.Next = listItemNilPoiner
+		// Уберем указатели у удаляемого элемента
 		i.Prev = listItemNilPoiner
-		l.lenght--
+		i.Next = listItemNilPoiner
+		l.length--
 
 	default:
 		return
 	}
 
-	curItem := i
-	switch {
-	// Если элементов не было, то добавляемый элемент одновременно является и первым и последним
-	case l.lenght == 0:
-		l.tail = curItem
-		l.head = curItem
-		l.lenght++
-
-	// Если был один элемент в списке
-	// - первый элемент заменит последний
-	// - новый элемент будет связан с предыдущем
-	case l.lenght == 1:
-		prevHeadItem := l.head
-		curItem.Prev = listItemNilPoiner
-		curItem.Next = prevHeadItem
-		prevHeadItem.Prev = curItem
-		prevHeadItem.Next = listItemNilPoiner
-		l.head = curItem
-		l.tail = prevHeadItem
-		l.lenght++
-
-	// В любой иной ситуации связываем новый элемент с текущей вершиной и заменяем им вершину
-	default:
-		prevHeadItem := l.head
-		curItem.Next = prevHeadItem
-		prevHeadItem.Prev = curItem
-		l.head = curItem
-		l.lenght++
-	}
-
-	// Если после добавления элемента, размер превышает его емкость, срезать конец
-	if l.lenght > l.capacity {
-		prevTailItem := l.tail
-		l.tail = prevTailItem.Prev
-		l.tail.Next = listItemNilPoiner
-		prevTailItem.Prev = listItemNilPoiner
-		l.lenght--
-	}
+	l.pushToFront(i)
 }
 
 func (l *list) All() []interface{} {
-	var items []interface{}
-	item := l.Front()
-	if item != nil {
-		for i := item; i != nil; i = i.Next {
-			items = append(items, i.Value)
-		}
+	var elems []interface{}
+	for i := l.Front(); i != nil; i = i.Next {
+		elems = append(elems, i.Value.(int))
 	}
-	return items
+	return elems
 }
 
-func NewList(capacity int) List {
-	return &list{
-		capacity: capacity,
-	}
+func NewList() List {
+	return &list{}
 }
 
-// Конструктор связанного списка
-func NewDoublyLinkedList(capacity int) List {
-	return &list{
-		capacity: capacity,
-	}
-}
-
-// Конструктор элемента связанного списка
-func NewDoublyLinkedListItem(value interface{}) *ListItem {
+func newListItem(value interface{}) *ListItem {
 	return &ListItem{
 		Value: value,
 	}
