@@ -1,7 +1,5 @@
 package hw04lrucache
 
-import "fmt"
-
 type Key string
 
 type Cache interface {
@@ -12,8 +10,8 @@ type Cache interface {
 
 type lruCache struct {
 	capacity int
-	queue    DoublyLinkedLister
-	items    map[Key]*DLListItem
+	queue    List
+	items    map[Key]*ListItem
 }
 
 type cacheItem struct {
@@ -28,9 +26,6 @@ func (cache *lruCache) Get(key Key) (interface{}, bool) {
 	queueItem, ok := cache.items[key]
 	if ok {
 		isExists = true
-		fmt.Println(queueItem)
-		fmt.Println(queueItem.Next)
-		fmt.Println(queueItem.Prev)
 		item := queueItem.Value
 		value = item.(*cacheItem).value
 		cache.queue.MoveToFront(queueItem)
@@ -55,8 +50,8 @@ func (cache *lruCache) Set(key Key, value interface{}) bool {
 	// Перед тем как добавлять новый элемент необходимо
 	// Вытолкнуть последний элемент списка
 	if queue.Len() >= cache.capacity {
-		back, err := queue.Back()
-		if err == nil {
+		back := queue.Back()
+		if back != nil {
 			key := back.Value.(*cacheItem).key
 			queue.Remove(back)
 			delete(cache.items, key)
@@ -69,8 +64,8 @@ func (cache *lruCache) Set(key Key, value interface{}) bool {
 
 // Очистить кеш
 func (cache *lruCache) Clear() {
-	item, err := cache.queue.Front()
-	if err != nil {
+	item := cache.queue.Front()
+	if item == nil {
 		return
 	}
 	for i := item; i != nil; i = i.Next {
@@ -84,6 +79,6 @@ func NewCache(capacity int) Cache {
 	return &lruCache{
 		capacity: capacity,
 		queue:    NewDoublyLinkedList(capacity),
-		items:    make(map[Key]*DLListItem, capacity),
+		items:    make(map[Key]*ListItem, capacity),
 	}
 }
