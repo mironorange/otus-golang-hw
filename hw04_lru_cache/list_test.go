@@ -72,7 +72,7 @@ func TestDoublyLinkedLenght(t *testing.T) {
 }
 
 // Если в список добавлять элеенты сверху
-// - то они будут связаны друг с другом по мере их добавления
+// - то они будут связаны друг с другом по мере их добавления.
 func TestPushFrontToDoublyLinkedList(t *testing.T) {
 	l := NewList()
 
@@ -91,7 +91,7 @@ func TestPushFrontToDoublyLinkedList(t *testing.T) {
 }
 
 // Если в список добавлять элементы снизу
-// - то они будут связаны друг с другом по мере их добавления
+// - то они будут связаны друг с другом по мере их добавления.
 func TestPushBackToDoublyLinkedList(t *testing.T) {
 	l := NewList()
 
@@ -110,7 +110,7 @@ func TestPushBackToDoublyLinkedList(t *testing.T) {
 }
 
 // Если в списке один элемент
-// - то он будет возвращаться и с вершины и с конца
+// - то он будет возвращаться и с вершины и с конца.
 func TestDoublyLinkedListWithOneElement(t *testing.T) {
 	tests := []struct {
 		build    func() List
@@ -145,7 +145,7 @@ func TestDoublyLinkedListWithOneElement(t *testing.T) {
 }
 
 // Если попытаться получить вершину пустого списка
-// - то получаем Nil в ответ
+// - то получаем Nil в ответ.
 func TestEmptyDoublyLinkedListHead(t *testing.T) {
 	l := NewList()
 	i := l.Front()
@@ -153,7 +153,7 @@ func TestEmptyDoublyLinkedListHead(t *testing.T) {
 }
 
 // Если попытаться получить хвост пустого списка
-// - то получаем Nil в ответ
+// - то получаем Nil в ответ.
 func TestEmptyDoublyLinkedTail(t *testing.T) {
 	l := NewList()
 	i := l.Back()
@@ -161,7 +161,7 @@ func TestEmptyDoublyLinkedTail(t *testing.T) {
 }
 
 // Если удалять элементы из разных частей списка
-// - то меняется количество элементов, вершина и хвост
+// - то меняется количество элементов, вершина и хвост.
 func TestRemoveDoublyLinkedListItem(t *testing.T) {
 	tests := []struct {
 		build          func() (List, *ListItem)
@@ -225,7 +225,7 @@ func TestRemoveDoublyLinkedListItem(t *testing.T) {
 }
 
 // Если перемещать элементы из разных частей списка
-// - то меняется вершина и хвост списка
+// - то меняется вершина и хвост списка.
 func TestMoveToFrontDoublyLinkedListItem(t *testing.T) {
 	tests := []struct {
 		build         func() (List, *ListItem)
@@ -301,7 +301,7 @@ func TestMoveToFrontDoublyLinkedListItem(t *testing.T) {
 }
 
 // Если из очереди сделать слайс
-// - то порядок элементов в нем будет соответсвовать порядку элементов в списке
+// - то порядок элементов в нем будет соответсвовать порядку элементов в списке.
 func TestGetAllDoublyLinkedListItems(t *testing.T) {
 	l := NewList()
 	expected := []interface{}{1, 3, 5, 7, 9}
@@ -313,7 +313,7 @@ func TestGetAllDoublyLinkedListItems(t *testing.T) {
 }
 
 // Если из очереди удалить все элементы
-// - то в очереде их не будет, вершина и хвост будут ссылаться на пустоту
+// - то в очереде их не будет, вершина и хвост будут ссылаться на пустоту.
 func TestRemoveAllDoublyLinkedListItems(t *testing.T) {
 	l := NewList()
 	input := []interface{}{1, 3, 5, 7, 9}
