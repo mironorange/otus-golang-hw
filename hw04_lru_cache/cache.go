@@ -42,27 +42,29 @@ func (cache *lruCache) Set(key Key, value interface{}) bool {
 	cache.mutex.Lock()
 	queue := cache.queue
 	isExists := false
-	queueItem, ok := cache.items[key]
-	if ok {
-		isExists = true
-		queue.Remove(queueItem)
-	}
 	item := &cacheItem{
 		key:   key,
 		value: value,
 	}
-	// Если операция добавления элемента приведет к переполнению списка
-	// Перед тем как добавлять новый элемент необходимо
-	// Вытолкнуть последний элемент списка
-	if queue.Len() >= cache.capacity {
-		back := queue.Back()
-		if back != nil {
-			key := back.Value.(*cacheItem).key
-			queue.Remove(back)
-			delete(cache.items, key)
+	queueItem, ok := cache.items[key]
+	if ok {
+		isExists = true
+		queueItem.Value = item
+		queue.MoveToFront(queueItem)
+	} else {
+		// Если операция добавления элемента приведет к переполнению списка
+		// Перед тем как добавлять новый элемент необходимо
+		// Вытолкнуть последний элемент списка
+		if queue.Len() >= cache.capacity {
+			back := queue.Back()
+			if back != nil {
+				key := back.Value.(*cacheItem).key
+				queue.Remove(back)
+				delete(cache.items, key)
+			}
 		}
+		queueItem = queue.PushFront(item)
 	}
-	queueItem = queue.PushFront(item)
 	cache.items[key] = queueItem
 	cache.mutex.Unlock()
 	return isExists
