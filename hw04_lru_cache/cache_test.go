@@ -50,13 +50,66 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+		c := NewCache(3)
+		fixtures := []struct {
+			key     Key
+			value   interface{}
+			survive bool
+		}{
+			{key: "aaa", value: 1, survive: false},
+			{key: "bbb", value: 3, survive: false},
+			{key: "ccc", value: 5, survive: true},
+			{key: "ddd", value: 7, survive: true},
+			{key: "eee", value: 9, survive: true},
+		}
+		for _, f := range fixtures {
+			c.Set(f.key, f.value)
+		}
+		for _, f := range fixtures {
+			val, ok := c.Get(f.key)
+			if f.survive {
+				require.True(t, ok)
+				require.Equal(t, f.value, val)
+			} else {
+				require.False(t, ok)
+				require.Nil(t, val)
+			}
+		}
+	})
+
+	t.Run("overwriting logic", func(t *testing.T) {
+		var k Key
+		c := NewCache(3)
+		k = "aaa"
+		fixtures := []struct {
+			key     Key
+			value   interface{}
+			survive bool
+		}{
+			{key: k, value: 1, survive: true},
+			{key: "bbb", value: 3, survive: false},
+			{key: "ccc", value: 5, survive: false},
+			{key: "ddd", value: 7, survive: true},
+			{key: "eee", value: 9, survive: true},
+		}
+		for _, f := range fixtures {
+			c.Set(f.key, f.value)
+			c.Get(k)
+		}
+		for _, f := range fixtures {
+			val, ok := c.Get(f.key)
+			if f.survive {
+				require.True(t, ok)
+				require.Equal(t, f.value, val)
+			} else {
+				require.False(t, ok)
+				require.Nil(t, val)
+			}
+		}
 	})
 }
 
 func TestCacheMultithreading(t *testing.T) {
-	t.Skip() // Remove me if task with asterisk completed.
-
 	c := NewCache(10)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
