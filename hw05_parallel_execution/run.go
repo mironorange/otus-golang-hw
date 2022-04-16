@@ -32,7 +32,7 @@ func Run(tasks []Task, n, m int) error {
 		go func() {
 			defer wg.Done()
 			for task := range tasksChannel {
-				if errorsCount > int32(m) {
+				if atomic.LoadInt32(&errorsCount) > int32(m) {
 					break
 				}
 				if err := task(); err != nil {
