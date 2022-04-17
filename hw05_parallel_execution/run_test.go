@@ -15,6 +15,57 @@ import (
 func TestRun(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
+	t.Run("if workers is less than 0", func(t *testing.T) {
+		tasksCount := 0
+		maxErrorsCount := 5
+		workersCount := 15
+		tasks := make([]Task, 0, tasksCount)
+		for i := 0; i < tasksCount; i++ {
+			tasks = append(tasks, func() error {
+				return nil
+			})
+		}
+		err := Run(tasks, workersCount, maxErrorsCount)
+		require.Nil(t, err)
+	})
+
+	t.Run("if workers is less than 0", func(t *testing.T) {
+		tasksCount := 5
+		maxErrorsCount := 5
+		tasks := make([]Task, 0, tasksCount)
+		for i := 0; i < tasksCount; i++ {
+			tasks = append(tasks, func() error {
+				return nil
+			})
+		}
+
+		workersCount := -1
+		err := Run(tasks, workersCount, maxErrorsCount)
+		require.True(t, errors.Is(err, ErrWorkersLimited))
+
+		workersCount = 0
+		err = Run(tasks, workersCount, maxErrorsCount)
+		require.True(t, errors.Is(err, ErrWorkersLimited))
+	})
+
+	t.Run("if errors is less than 0", func(t *testing.T) {
+		tasksCount := 5
+		tasks := make([]Task, 0, tasksCount)
+		for i := 0; i < tasksCount; i++ {
+			tasks = append(tasks, func() error {
+				return nil
+			})
+		}
+
+		maxErrorsCount := 0
+		err := Run(tasks, 5, maxErrorsCount)
+		require.True(t, errors.Is(err, ErrErrorsLimitExceeded))
+
+		maxErrorsCount = -5
+		err = Run(tasks, 5, maxErrorsCount)
+		require.True(t, errors.Is(err, ErrErrorsLimitExceeded))
+	})
+
 	t.Run("if were errors in first M tasks, than finished not more N+M tasks", func(t *testing.T) {
 		tasksCount := 50
 		tasks := make([]Task, 0, tasksCount)
