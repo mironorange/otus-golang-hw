@@ -13,10 +13,26 @@ const (
 	fault         = sleepPerStage / 2
 )
 
-// TODO: Добавить дополнительные тесты
-// - Пустой слайд с стейджами должен возвращать закрытый канал на чтение
-// - Переданный закрытый канал на запись должен завершать обработку и возвращать пустой массив результатов
-// - Закрытый сигнальный канал должен не обрабатывать ни одного значения и возвращать закрытый канал на чтение
+func TestEmptyStages(t *testing.T) {
+	stages := []Stage{}
+	in := make(Bi)
+	data := []interface{}{1, 2, 3, 4, 5}
+	result := []interface{}{}
+
+	go func() {
+		for _, v := range data {
+			in <- v
+		}
+		close(in)
+	}()
+
+	for s := range ExecutePipeline(in, nil, stages...) {
+		result = append(result, s)
+	}
+
+	require.Len(t, result, len(data))
+	require.Equal(t, data, result)
+}
 
 func TestPipeline(t *testing.T) {
 	// Stage generator
@@ -94,5 +110,38 @@ func TestPipeline(t *testing.T) {
 
 		require.Len(t, result, 0)
 		require.Less(t, int64(elapsed), int64(abortDur)+int64(fault))
+	})
+
+	t.Run("closed in chan", func(t *testing.T) {
+		in := make(Bi)
+		result := []interface{}{}
+		close(in)
+
+		for s := range ExecutePipeline(in, nil, stages...) {
+			result = append(result, s)
+		}
+
+		require.Len(t, result, 0)
+	})
+
+	t.Run("closed done chan", func(t *testing.T) {
+		in := make(Bi)
+		data := []interface{}{1, 2, 3, 4, 5}
+		result := []interface{}{}
+		done := make(Bi)
+		close(done)
+
+		go func() {
+			for _, v := range data {
+				in <- v
+			}
+			close(in)
+		}()
+
+		for s := range ExecutePipeline(in, done, stages...) {
+			result = append(result, s)
+		}
+
+		require.Less(t, len(result), len(data))
 	})
 }
