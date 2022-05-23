@@ -4,6 +4,8 @@ import (
 	"errors"
 	"io"
 	"os"
+
+	"github.com/cheggaaa/pb/v3"
 )
 
 var (
@@ -30,8 +32,11 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		limit = dstStats.Size()
 	}
 
+	bar := pb.Full.Start64(dstStats.Size())
+
 	// Если записать файл нельзя, то и операция не выполнится
 	src, err := os.Create(toPath)
+	srcWriter := bar.NewProxyWriter(src)
 	if err != nil {
 		return ErrUnsupportedFile
 	}
@@ -45,9 +50,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		if totalBytesCopied+readSize > int(limit) {
 			readSize = int(limit) - totalBytesCopied
 		}
-
-		writeSize, _ := src.Write(buf[0:readSize])
-
+		writeSize, _ := srcWriter.Write(buf[0:readSize])
 		totalBytesCopied += writeSize
 		if totalBytesCopied == int(limit) {
 			break
@@ -57,6 +60,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		}
 	}
 
+	bar.Finish()
 	defer dst.Close()
 	defer src.Close()
 	return nil
