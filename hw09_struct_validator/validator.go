@@ -10,21 +10,6 @@ import (
 	"strings"
 )
 
-var (
-	ErrIsNotStruct           = errors.New("is not struct")
-	ErrHasUnknownValidator   = errors.New("has unknown validator")
-	ErrHasInvalidValidator   = errors.New("has invalid validator")
-	ErrWhanCreatingValidator = errors.New("when creating validator")
-
-	ErrValidateLessValue       = errors.New("value is less than expected")
-	ErrValidateOutOfScopeValue = errors.New("value out of scope")
-	ErrValidateGreaterValue    = errors.New("value is greater than expected")
-	ErrValidateStringLength    = errors.New("string length does not match expected")
-	ErrValidateRegularMatch    = errors.New("value does not match regular expression")
-
-	NilValidationError ValidationError
-)
-
 type (
 	// Все валидаторы объедены общим интерфейсом.
 	FieldValidator interface {
@@ -41,7 +26,7 @@ type (
 		length int
 	}
 
-	// Валидатор проверяет соответствие регулярному выражению
+	// Валидатор проверяет соответствие регулярному выражению.
 	RegexpStringFieldValidator struct {
 		regexp *regexp.Regexp
 	}
@@ -67,8 +52,41 @@ type (
 		Err   error
 	}
 
-	// Ошибки валидации объединенные в массив
+	// Ошибка валидации возникающая если при создании какого-то поля произошла ошибка.
+	CreationError struct {
+		Field string
+		Err   error
+	}
+
+	// Ошибки валидации объединенные в массив.
 	ValidationErrors []ValidationError
+)
+
+var (
+	ErrIsNotStruct           = errors.New("is not struct")
+	ErrHasUnknownValidator   = errors.New("has unknown validator")
+	ErrHasInvalidValidator   = errors.New("has invalid validator")
+	ErrWhanCreatingValidator = errors.New("when creating validator")
+
+	ErrValidateLessValue       = errors.New("value is less than expected")
+	ErrValidateOutOfScopeValue = errors.New("value out of scope")
+	ErrValidateGreaterValue    = errors.New("value is greater than expected")
+	ErrValidateStringLength    = errors.New("string length does not match expected")
+	ErrValidateRegularMatch    = errors.New("value does not match regular expression")
+
+	NilValidationError        ValidationError
+	mappingCreateFuncWithKind = map[reflect.Kind]map[string]func(cond string) (FieldValidator, error){
+		reflect.String: {
+			"in":     NewInStringValidator,
+			"len":    NewLengthStringValidator,
+			"regexp": NewRegexpStringFieldValidator,
+		},
+		reflect.Int: {
+			"in":  NewInIntValidator,
+			"min": NewMinIntValidator,
+			"max": NewMaxIntValidator,
+		},
+	}
 )
 
 func NewMinIntValidator(cond string) (FieldValidator, error) {
@@ -87,15 +105,8 @@ func NewMinIntValidator(cond string) (FieldValidator, error) {
 }
 
 func (fv *MinIntFieldValidator) ValidateField(field reflect.StructField, value reflect.Value) ValidationError {
-	switch field.Type.Kind() {
-	case reflect.Int:
-		if value.Int() < int64(fv.min) {
-			return ValidationError{
-				Field: field.Name,
-				Err:   ErrValidateLessValue,
-			}
-		}
-	case reflect.Slice:
+	kind := field.Type.Kind()
+	if kind == reflect.Slice || kind == reflect.Array {
 		for _, v := range value.Interface().([]int64) {
 			if v < int64(fv.min) {
 				return ValidationError{
@@ -104,7 +115,9 @@ func (fv *MinIntFieldValidator) ValidateField(field reflect.StructField, value r
 				}
 			}
 		}
-	default:
+	}
+
+	if value.Int() < int64(fv.min) {
 		return ValidationError{
 			Field: field.Name,
 			Err:   ErrValidateLessValue,
@@ -134,15 +147,8 @@ func NewInIntValidator(cond string) (FieldValidator, error) {
 }
 
 func (fv *InIntFieldValidator) ValidateField(field reflect.StructField, value reflect.Value) ValidationError {
-	switch field.Type.Kind() {
-	case reflect.Int:
-		if _, ok := fv.in[int(value.Int())]; !ok {
-			return ValidationError{
-				Field: field.Name,
-				Err:   ErrValidateOutOfScopeValue,
-			}
-		}
-	case reflect.Slice:
+	kind := field.Type.Kind()
+	if kind == reflect.Slice || kind == reflect.Array {
 		for _, v := range value.Interface().([]int) {
 			if _, ok := fv.in[v]; !ok {
 				return ValidationError{
@@ -151,7 +157,9 @@ func (fv *InIntFieldValidator) ValidateField(field reflect.StructField, value re
 				}
 			}
 		}
-	default:
+	}
+
+	if _, ok := fv.in[int(value.Int())]; !ok {
 		return ValidationError{
 			Field: field.Name,
 			Err:   ErrValidateOutOfScopeValue,
@@ -177,15 +185,8 @@ func NewMaxIntValidator(cond string) (FieldValidator, error) {
 }
 
 func (fv *MaxIntFieldValidator) ValidateField(field reflect.StructField, value reflect.Value) ValidationError {
-	switch field.Type.Kind() {
-	case reflect.Int:
-		if value.Int() > int64(fv.max) {
-			return ValidationError{
-				Field: field.Name,
-				Err:   ErrValidateGreaterValue,
-			}
-		}
-	case reflect.Slice:
+	kind := field.Type.Kind()
+	if kind == reflect.Slice || kind == reflect.Array {
 		for _, v := range value.Interface().([]int64) {
 			if v > int64(fv.max) {
 				return ValidationError{
@@ -194,7 +195,9 @@ func (fv *MaxIntFieldValidator) ValidateField(field reflect.StructField, value r
 				}
 			}
 		}
-	default:
+	}
+
+	if value.Int() > int64(fv.max) {
 		return ValidationError{
 			Field: field.Name,
 			Err:   ErrValidateGreaterValue,
@@ -220,15 +223,8 @@ func NewLengthStringValidator(cond string) (FieldValidator, error) {
 }
 
 func (fv *LengthStringFieldValidator) ValidateField(field reflect.StructField, value reflect.Value) ValidationError {
-	switch field.Type.Kind() {
-	case reflect.String:
-		if len(value.String()) != fv.length {
-			return ValidationError{
-				Field: field.Name,
-				Err:   ErrValidateStringLength,
-			}
-		}
-	case reflect.Slice:
+	kind := field.Type.Kind()
+	if kind == reflect.Slice || kind == reflect.Array {
 		for _, v := range value.Interface().([]string) {
 			if len(v) != fv.length {
 				return ValidationError{
@@ -237,7 +233,9 @@ func (fv *LengthStringFieldValidator) ValidateField(field reflect.StructField, v
 				}
 			}
 		}
-	default:
+	}
+
+	if len(value.String()) != fv.length {
 		return ValidationError{
 			Field: field.Name,
 			Err:   ErrValidateStringLength,
@@ -263,15 +261,8 @@ func NewInStringValidator(values string) (FieldValidator, error) {
 }
 
 func (fv *InStringFieldValidator) ValidateField(field reflect.StructField, value reflect.Value) ValidationError {
-	switch field.Type.Kind() {
-	case reflect.String:
-		if _, ok := fv.in[value.String()]; !ok {
-			return ValidationError{
-				Field: field.Name,
-				Err:   ErrValidateOutOfScopeValue,
-			}
-		}
-	case reflect.Slice:
+	kind := field.Type.Kind()
+	if kind == reflect.Slice || kind == reflect.Array {
 		for _, v := range value.Interface().([]string) {
 			if _, ok := fv.in[v]; !ok {
 				return ValidationError{
@@ -280,7 +271,9 @@ func (fv *InStringFieldValidator) ValidateField(field reflect.StructField, value
 				}
 			}
 		}
-	default:
+	}
+
+	if _, ok := fv.in[value.String()]; !ok {
 		return ValidationError{
 			Field: field.Name,
 			Err:   ErrValidateOutOfScopeValue,
@@ -293,7 +286,7 @@ func (fv *InStringFieldValidator) ValidateField(field reflect.StructField, value
 func NewRegexpStringFieldValidator(exp string) (FieldValidator, error) {
 	var validator FieldValidator
 
-	var reg, err = regexp.Compile(exp)
+	reg, err := regexp.Compile(exp)
 	if err != nil {
 		return validator, err
 	}
@@ -306,15 +299,8 @@ func NewRegexpStringFieldValidator(exp string) (FieldValidator, error) {
 }
 
 func (fv *RegexpStringFieldValidator) ValidateField(field reflect.StructField, value reflect.Value) ValidationError {
-	switch field.Type.Kind() {
-	case reflect.String:
-		if !fv.regexp.MatchString(value.String()) {
-			return ValidationError{
-				Field: field.Name,
-				Err:   ErrValidateRegularMatch,
-			}
-		}
-	case reflect.Slice:
+	kind := field.Type.Kind()
+	if kind == reflect.Slice || kind == reflect.Array {
 		for _, v := range value.Interface().([]string) {
 			if !fv.regexp.MatchString(v) {
 				return ValidationError{
@@ -323,7 +309,9 @@ func (fv *RegexpStringFieldValidator) ValidateField(field reflect.StructField, v
 				}
 			}
 		}
-	default:
+	}
+
+	if !fv.regexp.MatchString(value.String()) {
 		return ValidationError{
 			Field: field.Name,
 			Err:   ErrValidateRegularMatch,
@@ -333,18 +321,7 @@ func (fv *RegexpStringFieldValidator) ValidateField(field reflect.StructField, v
 	return NilValidationError
 }
 
-func prepareNotSupportFieldValidator(f reflect.StructField) ([]FieldValidator, error) {
-	var validators []FieldValidator
-
-	_, ok := f.Tag.Lookup("validate")
-	if !ok {
-		return validators, nil
-	}
-
-	return validators, ErrHasUnknownValidator
-}
-
-func prepareStringFieldValidator(f reflect.StructField) ([]FieldValidator, error) {
+func NewFieldValidators(f reflect.StructField, k reflect.Kind) ([]FieldValidator, error) {
 	var validators []FieldValidator
 
 	tags, ok := f.Tag.Lookup("validate")
@@ -352,74 +329,34 @@ func prepareStringFieldValidator(f reflect.StructField) ([]FieldValidator, error
 		return validators, nil
 	}
 
-	validators = make([]FieldValidator, 0)
+	createFuncMapping, ok := mappingCreateFuncWithKind[k]
+	if !ok {
+		return validators, ErrHasUnknownValidator
+	}
 	for _, validationRules := range strings.Split(tags, "|") {
-		if ruleСondition := strings.Split(validationRules, ":"); len(ruleСondition) == 2 {
-			switch ruleСondition[0] {
-			case "len":
-				validator, err := NewLengthStringValidator(ruleСondition[1])
-				if err != nil {
-					return validators, err
-				}
-				validators = append(validators, validator)
-			case "in":
-				validator, err := NewInStringValidator(ruleСondition[1])
-				if err != nil {
-					return validators, err
-				}
-				validators = append(validators, validator)
-			case "regexp":
-				validator, err := NewRegexpStringFieldValidator(ruleСondition[1])
-				if err != nil {
-					return validators, err
-				}
-				validators = append(validators, validator)
-			default:
+		if ruleCondition := strings.Split(validationRules, ":"); len(ruleCondition) == 2 {
+			createFunc, ok := createFuncMapping[ruleCondition[0]]
+			if !ok {
 				return validators, ErrHasUnknownValidator
 			}
+			validator, err := createFunc(ruleCondition[1])
+			if err != nil {
+				return validators, CreationError{
+					Field: f.Name,
+					Err:   err,
+				}
+			}
+			validators = append(validators, validator)
+		} else {
+			return validators, ErrHasInvalidValidator
 		}
 	}
 
 	return validators, nil
 }
 
-func prepareIntFieldValidator(f reflect.StructField) ([]FieldValidator, error) {
-	var validators []FieldValidator
-
-	tags, ok := f.Tag.Lookup("validate")
-	if !ok {
-		return validators, nil
-	}
-
-	validators = make([]FieldValidator, 0)
-	for _, validationRules := range strings.Split(tags, "|") {
-		if ruleСondition := strings.Split(validationRules, ":"); len(ruleСondition) == 2 {
-			switch ruleСondition[0] {
-			case "min":
-				validator, err := NewMinIntValidator(ruleСondition[1])
-				if err != nil {
-					return validators, err
-				}
-				validators = append(validators, validator)
-			case "in":
-				validator, err := NewInIntValidator(ruleСondition[1])
-				if err != nil {
-					return validators, err
-				}
-				validators = append(validators, validator)
-			case "max":
-				validator, err := NewMaxIntValidator(ruleСondition[1])
-				if err != nil {
-					return validators, err
-				}
-				validators = append(validators, validator)
-			default:
-				return validators, ErrHasUnknownValidator
-			}
-		}
-	}
-
-	return validators, nil
+func (e CreationError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Field, e.Err)
 }
 
 func (e ValidationError) Error() string {
@@ -450,72 +387,34 @@ func Validate(v interface{}) error {
 	for i := 0; i < r.NumField(); i++ {
 		structField := r.Type().Field(i)
 		fieldValue := r.Field(i)
-		switch structField.Type.Kind() {
-		case reflect.String:
-			fieldValidators, err := prepareStringFieldValidator(structField)
-			if err == nil && len(fieldValidators) > 0 {
-				validators[structField.Name] = fieldValidators
-			} else if err != nil {
-				return ErrWhanCreatingValidator
+		kind := structField.Type.Kind()
+		if kind == reflect.Slice || kind == reflect.Array {
+			if fieldValue.Len() == 0 {
+				continue
 			}
-		case reflect.Int:
-			fieldValidators, err := prepareIntFieldValidator(structField)
-			if err == nil && len(fieldValidators) > 0 {
-				validators[structField.Name] = fieldValidators
-			} else if err != nil {
-				return ErrWhanCreatingValidator
-			}
-		case reflect.Slice:
-			if fieldValue.Len() > 0 {
-				switch fieldValue.Index(0).Type().Kind() {
-				case reflect.String:
-					fieldValidators, err := prepareStringFieldValidator(structField)
-					if err == nil && len(fieldValidators) > 0 {
-						validators[structField.Name] = fieldValidators
-					} else if err != nil {
-						return ErrWhanCreatingValidator
-					}
-				case reflect.Int:
-					fieldValidators, err := prepareIntFieldValidator(structField)
-					if err == nil && len(fieldValidators) > 0 {
-						validators[structField.Name] = fieldValidators
-					} else if err != nil {
-						return ErrWhanCreatingValidator
-					}
-				default:
-					if _, err := prepareNotSupportFieldValidator(structField); err != nil {
-						return ErrWhanCreatingValidator
-					}
-				}
-			}
-		case reflect.Ptr:
-			if _, err := prepareNotSupportFieldValidator(structField); err != nil {
-				return ErrHasUnknownValidator
-			}
-		case reflect.Struct:
-			if _, err := prepareNotSupportFieldValidator(structField); err != nil {
-				return ErrHasUnknownValidator
-			}
-		default:
-			if _, err := prepareNotSupportFieldValidator(structField); err != nil {
-				return ErrHasUnknownValidator
-			}
+			kind = fieldValue.Index(0).Type().Kind()
+		}
+		fieldValidators, err := NewFieldValidators(structField, kind)
+		if err == nil && len(fieldValidators) > 0 {
+			validators[structField.Name] = fieldValidators
+		} else if err != nil {
+			return err
 		}
 	}
 
-	vErrors := make(ValidationErrors, 0)
+	validationErrors := make(ValidationErrors, 0)
 	for name, fieldValidators := range validators {
 		field, _ := r.Type().FieldByName(name)
 		value := r.FieldByName(name)
 		for _, v := range fieldValidators {
 			if err := v.ValidateField(field, value); err != NilValidationError {
-				vErrors = append(vErrors, err)
+				validationErrors = append(validationErrors, err)
 			}
 		}
 	}
 
-	if len(vErrors) > 0 {
-		return vErrors
+	if len(validationErrors) > 0 {
+		return validationErrors
 	}
 
 	return nil
