@@ -1,3 +1,5 @@
+// +build bench
+
 package hw10programoptimization
 
 import (
