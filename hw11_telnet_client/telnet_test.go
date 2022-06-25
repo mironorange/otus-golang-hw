@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// "10.255.255.1:8080"
-
 func TestTelnetClient(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
 		l, err := net.Listen("tcp", "127.0.0.1:")
@@ -66,4 +64,16 @@ func TestTelnetClient(t *testing.T) {
 
 		wg.Wait()
 	})
+}
+
+func TestTelnetClientTimeout(t *testing.T) {
+	in := &bytes.Buffer{}
+	out := &bytes.Buffer{}
+	timeout := 10 * time.Millisecond
+
+	unavailableAddr := "10.255.255.1:8080"
+	_, cancelFunc := context.WithCancel(context.Background())
+
+	client := NewTelnetClient(unavailableAddr, timeout, ioutil.NopCloser(in), out, cancelFunc)
+	require.Error(t, client.Connect())
 }
