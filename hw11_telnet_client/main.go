@@ -1,73 +1,49 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"fmt"
+	"flag"
 	"log"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
+var (
+	connectTimeout time.Duration
+)
+
+func init() {
+	flag.DurationVar(&connectTimeout, "timeout", 10*time.Second, "connection timeout")
+}
+
 func main() {
-	fmt.Println("It`s work!")
+	flag.Parse()
+	if flag.NArg() < 2 {
+		log.Fatalln("host or port not set")
+	}
 
-	//// Читать из входящего потока ввода и выводить на экран
-	//scanner := bufio.NewScanner(os.Stdin)
-	//for scanner.Scan() {
-	//	line := scanner.Text()
-	//	fmt.Println(line)
-	//}
+	host := flag.Arg(0)
+	port := flag.Arg(1)
 
-	//// Соединиться по tcp с сервером
-	//dialer := &net.Dialer{}
-	//ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	//defer cancel()
-	//
-	//conn, err := dialer.DialContext(ctx, "tcp", "127.0.0.1:9000")
-	//if err != nil {
-	//	log.Fatalf("Cannot connect: %v", err)
-	//}
-	//
-	//<-ctx.Done()
-	//time.Sleep(5*time.Second)
-	//conn.Close()
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
 
-	//// Соединиться по tcp с сервером и записать в него данные из потока ввода
-	//dialer := &net.Dialer{}
-	//
-	//ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	//
-	//conn, err := dialer.DialContext(ctx, "tcp", "127.0.0.1:9000")
-	//if err != nil {
-	//	log.Fatalf("Cannot connect: %v", err)
-	//}
-	//
-	//go readFromConnection(ctx, conn, cancel)
-	//go writeToConnection(ctx, conn, cancel)
-	//
-	//<-ctx.Done()
-	//time.Sleep(5*time.Second)
-	//conn.Close()
-
-	//// Ctrl-D sends EOF which doesn't make sense when you're not getting input.
-	//// Выйти из приложения при условии, что получен из вне сигнал о выходе
-	//c := make(chan os.Signal, 1)
-	//signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	//<-c
-	//fmt.Println("Bye!")
-
-	client := NewTelnetClient("127.0.0.1:9000", 5*time.Second, os.Stdin, os.Stdout)
+	client := NewTelnetClient(net.JoinHostPort(host, port), connectTimeout, os.Stdin, os.Stdout, cancelFunc)
 	defer client.Close()
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-
+	log.Println("trying to connect to the server")
 	if err := client.Connect(); err == nil {
+		log.Println("exchange data")
 		go func() {
 			for {
 				if err := client.Send(); err != nil {
-					return
+					log.Printf("error sending data, close the connection: %s\n", err)
+					cancelFunc()
 				}
 			}
 		}()
@@ -75,51 +51,23 @@ func main() {
 		go func() {
 			for {
 				if err := client.Receive(); err != nil {
-					return
+					log.Printf("error receiving data, close the connection: %s\n", err)
+					cancelFunc()
 				}
 			}
 		}()
+	} else {
+		close(c)
+		cancelFunc()
+		log.Fatalln(err)
 	}
 
-	<-ctx.Done()
-}
-
-func readFromConnection(ctx context.Context, conn net.Conn, cancel context.CancelFunc) {
-	scanner := bufio.NewScanner(conn)
-	func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				if !scanner.Scan() {
-					return
-				}
-				text := scanner.Text()
-				log.Printf("From server: %s", text)
-			}
-		}
-	}()
-	cancel()
-}
-
-func writeToConnection(ctx context.Context, conn net.Conn, cancel context.CancelFunc) {
-	scanner := bufio.NewScanner(os.Stdin)
-	func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				if !scanner.Scan() {
-					return
-				}
-				line := scanner.Text()
-				log.Printf("To server %v\n", line)
-
-				conn.Write([]byte(fmt.Sprintf("%s\n", line)))
-			}
-		}
-	}()
-	cancel()
+	select {
+	case <-ctx.Done():
+		log.Println("goodbye because done")
+		close(c)
+	case <-c:
+		log.Println("goodbye because signal")
+		cancelFunc()
+	}
 }

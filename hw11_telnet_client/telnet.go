@@ -3,10 +3,15 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"time"
+)
+
+var (
+	ErrClosedReading = errors.New("reading closed")
 )
 
 type TelnetClient interface {
@@ -17,82 +22,69 @@ type TelnetClient interface {
 }
 
 type Telnet struct {
-	ctx         context.Context
-	cancel      context.CancelFunc
-	conn        net.Conn
-	connScanner *bufio.Scanner
 	address     string
 	timeout     time.Duration
+	conn        net.Conn
+	out         io.Writer
 	inScanner   *bufio.Scanner
-	outWriter   io.Writer
+	connScanner *bufio.Scanner
+	cancelFunc  context.CancelFunc
 }
 
 func (t *Telnet) Connect() error {
-	ctx, cancel := context.WithTimeout(context.Background(), t.timeout)
-
-	dialer := &net.Dialer{}
-	conn, err := dialer.DialContext(ctx, "tcp", t.address)
-	if err != nil {
-		cancel()
-		return err
+	conn, err := net.DialTimeout("tcp", t.address, t.timeout)
+	if err == nil {
+		t.conn = conn
+		t.connScanner = bufio.NewScanner(conn)
 	}
-
-	t.ctx = ctx
-	t.cancel = cancel
-	t.conn = conn
-	t.connScanner = bufio.NewScanner(conn)
-	return nil
+	return err
 }
 
 func (t *Telnet) Close() error {
-	t.cancel()
-	if err := t.conn.Close(); err != nil {
-		return err
+	if t.conn != nil {
+		if err := t.conn.Close(); err != nil {
+			t.cancelFunc()
+			return err
+		}
 	}
 	return nil
 }
 
 func (t *Telnet) Send() error {
-	select {
-	case <-t.ctx.Done():
+	if !t.inScanner.Scan() {
+		t.cancelFunc()
 		return nil
-	default:
-		if !t.inScanner.Scan() {
-			return nil
-		}
-		line := t.inScanner.Text()
-		_, err := t.conn.Write([]byte(fmt.Sprintf("%s\n", line)))
-		if err != nil {
-			t.cancel()
-		}
+	}
+
+	line := t.inScanner.Bytes()
+	if _, err := t.conn.Write([]byte(fmt.Sprintf("%s\n", line))); err != nil {
 		return err
 	}
+
+	return nil
 }
 
 func (t *Telnet) Receive() error {
-	select {
-	case <-t.ctx.Done():
+	if !t.connScanner.Scan() {
+		t.cancelFunc()
 		return nil
-	default:
-		if !t.connScanner.Scan() {
-			return nil
-		}
-		line := t.connScanner.Text()
-		_, err := t.outWriter.Write([]byte(fmt.Sprintf("%s\n", line)))
-		if err != nil {
-			t.cancel()
-		}
+	}
+
+	line := t.connScanner.Bytes()
+	if _, err := t.out.Write([]byte(fmt.Sprintf("%s\n", line))); err != nil {
 		return err
 	}
+
+	return nil
 }
 
-func NewTelnetClient(address string, timeout time.Duration, in io.ReadCloser, out io.Writer) TelnetClient {
-	// Не могу создать соединение на этом этапе, так как физическое соединение и ошибка происходит в функции Connect()
+func NewTelnetClient(address string, timeout time.Duration, in io.ReadCloser, out io.Writer, cancelFunc context.CancelFunc) TelnetClient {
 	return &Telnet{
-		address:   address,
-		timeout:   timeout,
-		inScanner: bufio.NewScanner(in),
-		outWriter: out,
+		address:    address,
+		timeout:    timeout,
+		out:        out,
+		inScanner:  bufio.NewScanner(in),
+		cancelFunc: cancelFunc,
 	}
 }
 

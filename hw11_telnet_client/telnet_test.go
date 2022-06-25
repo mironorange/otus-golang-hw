@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net"
 	"sync"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
+
+// "10.255.255.1:8080"
 
 func TestTelnetClient(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
@@ -29,10 +32,11 @@ func TestTelnetClient(t *testing.T) {
 			timeout, err := time.ParseDuration("10s")
 			require.NoError(t, err)
 
-			client := NewTelnetClient(l.Addr().String(), timeout, ioutil.NopCloser(in), out)
+			_, cancelFunc := context.WithCancel(context.Background())
+			client := NewTelnetClient(l.Addr().String(), timeout, ioutil.NopCloser(in), out, cancelFunc)
 			require.NoError(t, client.Connect())
 			defer func() { require.NoError(t, client.Close()) }()
-
+:
 			in.WriteString("hello\n")
 			err = client.Send()
 			require.NoError(t, err)
