@@ -3,15 +3,10 @@ package main
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net"
 	"time"
-)
-
-var (
-	ErrClosedReading = errors.New("reading closed")
 )
 
 type TelnetClient interface {
@@ -78,7 +73,13 @@ func (t *Telnet) Receive() error {
 	return nil
 }
 
-func NewTelnetClient(address string, timeout time.Duration, in io.ReadCloser, out io.Writer, cancelFunc context.CancelFunc) TelnetClient {
+func NewTelnetClient(
+	address string,
+	timeout time.Duration,
+	in io.ReadCloser,
+	out io.Writer,
+	cancelFunc context.CancelFunc,
+) TelnetClient {
 	return &Telnet{
 		address:    address,
 		timeout:    timeout,
@@ -87,6 +88,3 @@ func NewTelnetClient(address string, timeout time.Duration, in io.ReadCloser, ou
 		cancelFunc: cancelFunc,
 	}
 }
-
-// Place your code here.
-// P.S. Author's solution takes no more than 50 lines.

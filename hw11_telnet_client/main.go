@@ -11,9 +11,7 @@ import (
 	"time"
 )
 
-var (
-	connectTimeout time.Duration
-)
+var connectTimeout time.Duration
 
 func init() {
 	flag.DurationVar(&connectTimeout, "timeout", 10*time.Second, "connection timeout")
@@ -31,10 +29,7 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-
 	client := NewTelnetClient(net.JoinHostPort(host, port), connectTimeout, os.Stdin, os.Stdout, cancelFunc)
-	defer client.Close()
 
 	log.Println("trying to connect to the server")
 	if err := client.Connect(); err == nil {
@@ -57,17 +52,21 @@ func main() {
 			}
 		}()
 	} else {
-		close(c)
 		cancelFunc()
+		client.Close()
+		close(c)
 		log.Fatalln(err)
 	}
 
 	select {
 	case <-ctx.Done():
 		log.Println("goodbye because done")
+		cancelFunc()
+		client.Close()
 		close(c)
 	case <-c:
 		log.Println("goodbye because signal")
 		cancelFunc()
+		client.Close()
 	}
 }
