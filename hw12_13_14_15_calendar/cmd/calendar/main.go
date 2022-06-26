@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,7 +12,7 @@ import (
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/app"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
 var configFile string
@@ -37,10 +37,18 @@ func main() {
 	logging := logger.New(config.Logger.Level)
 	logging.DoSomething()
 
-	// Инициализирую хранилище событий в приложении
-	storage := memorystorage.New()
-	_, err := storage.UUID("test")
-	fmt.Println(err)
+	driver := "postgres"
+	dsn := "postgres://whoever:qwerty@localhost/test?sslmode=disable"
+	storage := sqlstorage.New(driver, dsn)
+	ctxStorage := context.TODO()
+	if err := storage.Connect(ctxStorage); err != nil {
+		log.Fatal(err)
+	}
+
+	//// Инициализирую хранилище событий в приложении
+	//storage := memorystorage.New()
+	//_, err = storage.UUID("test")
+	//fmt.Println(err)
 
 	// Инициализирую объект приложения
 	calendar := app.New(logging, storage)

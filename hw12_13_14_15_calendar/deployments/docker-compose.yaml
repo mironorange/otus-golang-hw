@@ -1,1 +1,36 @@
 version: "3"
+
+
+
+services:
+  postgres:
+    container_name: postgresql
+    image: "postgres:11.16"
+    environment:
+      POSTGRES_USER: 'whoever'
+      POSTGRES_PASSWORD: 'qwerty'
+#      PGDATA: /data/postgres
+#    volumes:
+#      - postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+    restart: unless-stopped
+
+networks:
+  postgres:
+    driver: bridge
+
+#volumes:
+#  postgres:
+
+# docker exec -it 44332ecf6d8c bash
+# psql -U whoever -W
+# \l - show databases
+
+# create database test;
+# alter user whoever with encrypted password 'qwerty';
+# grant all privileges on database test to whoever;
+# \connect test;
+# CREATE SCHEMA testschema;
