@@ -23,4 +23,8 @@ func (a *App) CreateEvent(ctx context.Context, id, title string) error {
 	// return a.storage.CreateEvent(storage.Event{ID: id, Title: title})
 }
 
+func (a *App) DoSomething() {
+
+}
+
 // TODO

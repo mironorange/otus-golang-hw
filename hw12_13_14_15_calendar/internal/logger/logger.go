@@ -17,4 +17,7 @@ func (l Logger) Error(msg string) {
 	// TODO
 }
 
+func (l *Logger) DoSomething() {
+}
+
 // TODO

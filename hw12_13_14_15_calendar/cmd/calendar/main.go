@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/app"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/logger"
+	internalhttp "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/server/http"
+	memorystorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/memory"
 )
 
 var configFile string
@@ -28,18 +29,31 @@ func main() {
 		return
 	}
 
+	// Инициализирую конфигурацию приложения
 	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	config.DoSomething()
 
+	// Инициализирую логирование приложения
+	logging := logger.New(config.Logger.Level)
+	logging.DoSomething()
+
+	// Инициализирую хранилище событий в приложении
 	storage := memorystorage.New()
-	calendar := app.New(logg, storage)
+	_, err := storage.UUID("test")
+	fmt.Println(err)
 
-	server := internalhttp.NewServer(logg, calendar)
+	// Инициализирую объект приложения
+	calendar := app.New(logging, storage)
+	calendar.DoSomething()
 
-	ctx, cancel := signal.NotifyContext(context.Background(),
+	// Инициализирую сервер приложения
+	server := internalhttp.NewServer(logging, calendar)
+	server.DoSomething()
+	ctx, cancelFunc := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	defer cancel()
+	defer cancelFunc()
 
+	// Обрабатываю запросы к серверу приложения
 	go func() {
 		<-ctx.Done()
 
@@ -47,15 +61,15 @@ func main() {
 		defer cancel()
 
 		if err := server.Stop(ctx); err != nil {
-			logg.Error("failed to stop http server: " + err.Error())
+			logging.Error("failed to stop http server: " + err.Error())
 		}
 	}()
 
-	logg.Info("calendar is running...")
+	logging.Info("calendar is running...")
 
 	if err := server.Start(ctx); err != nil {
-		logg.Error("failed to start http server: " + err.Error())
-		cancel()
+		logging.Error("failed to start http server: " + err.Error())
+		cancelFunc()
 		os.Exit(1) //nolint:gocritic
 	}
 }

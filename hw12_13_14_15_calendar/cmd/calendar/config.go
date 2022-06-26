@@ -13,8 +13,12 @@ type LoggerConf struct {
 	// TODO
 }
 
-func NewConfig() Config {
-	return Config{}
+func NewConfig() *Config {
+	return &Config{}
+}
+
+func (c *Config) DoSomething() {
+
 }
 
 // TODO

@@ -28,4 +28,8 @@ func (s *Server) Stop(ctx context.Context) error {
 	return nil
 }
 
+func (s *Server) DoSomething() {
+
+}
+
 // TODO
