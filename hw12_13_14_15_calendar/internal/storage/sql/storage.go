@@ -79,7 +79,16 @@ type Storage struct {
 	dbConnect *sqlx.DB
 }
 
-func New(driver string, dsn string) *Storage {
+type EventStorage interface {
+	Connect(ctx context.Context) error
+	Close(ctx context.Context) error
+	Create(attributes Event) (bool, error)
+	Update(uuid string, attributes EventUpdateAttributes) (bool, error)
+	Get() (map[string]Event, error)
+	UUID(uuid string) (Event, error)
+}
+
+func New(driver string, dsn string) EventStorage {
 	return &Storage{
 		driver: driver,
 		dsn: dsn,

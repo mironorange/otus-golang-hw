@@ -1,6 +1,7 @@
 package memorystorage
 
 import (
+	"context"
 	"errors"
 	"sync"
 )
@@ -60,6 +61,14 @@ func New() EventStorage {
 		mu: sync.RWMutex{},
 		events: map[string]Event{},
 	}
+}
+
+func (s *Storage) Connect(ctx context.Context) error {
+	return nil
+}
+
+func (s *Storage) Close(ctx context.Context) error {
+	return nil
 }
 
 // Создает новое событие

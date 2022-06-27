@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	memorystorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/sql"
 	"log"
 	"os"
 	"os/signal"
@@ -12,13 +14,12 @@ import (
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/app"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/server/http"
-	sqlstorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
 var configFile string
 
 func init() {
-	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
+	flag.StringVar(&configFile, "config", "/etc/calendar/config.json", "Path to configuration file")
 }
 
 func main() {
@@ -31,24 +32,32 @@ func main() {
 
 	// Инициализирую конфигурацию приложения
 	config := NewConfig()
-	config.DoSomething()
+	ctxConfig := context.TODO()
+	if err := LoadConfig(ctxConfig, config, configFile); err != nil {
+		log.Fatal(err)
+	}
 
 	// Инициализирую логирование приложения
 	logging := logger.New(config.Logger.Level)
 	logging.DoSomething()
 
-	driver := "postgres"
-	dsn := "postgres://whoever:qwerty@localhost/test?sslmode=disable"
-	storage := sqlstorage.New(driver, dsn)
-	ctxStorage := context.TODO()
-	if err := storage.Connect(ctxStorage); err != nil {
-		log.Fatal(err)
+	var storage app.Storage
+	switch config.Events.Storage {
+	case "inmemory":
+		s := memorystorage.New()
+		storage = s.(app.Storage)
+	case "database":
+		driver := config.Database.Driver
+		dsn := config.Database.Dsn
+		s := sqlstorage.New(driver, dsn)
+		ctxStorage := context.TODO()
+		if err := s.Connect(ctxStorage); err != nil {
+			log.Fatal(err)
+		}
+		storage = s.(app.Storage)
+	default:
+		log.Fatal("storage not configured")
 	}
-
-	//// Инициализирую хранилище событий в приложении
-	//storage := memorystorage.New()
-	//_, err = storage.UUID("test")
-	//fmt.Println(err)
 
 	// Инициализирую объект приложения
 	calendar := app.New(logging, storage)
