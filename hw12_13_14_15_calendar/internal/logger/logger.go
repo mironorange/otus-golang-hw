@@ -1,23 +1,29 @@
 package logger
 
-import "fmt"
+import (
+	"github.com/sirupsen/logrus"
+)
 
-type Logger struct { // TODO
+type WrapLogger struct {
+	log *logrus.Logger
 }
 
-func New(level string) *Logger {
-	return &Logger{}
+func New(level string) *WrapLogger {
+	logger := logrus.New()
+	logger.SetLevel(logrus.InfoLevel)
+	logger.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+
+	return &WrapLogger{
+		log: logger,
+	}
 }
 
-func (l Logger) Info(msg string) {
-	fmt.Println(msg)
+func (l *WrapLogger) Info(msg string) {
+	l.log.Info(msg)
 }
 
-func (l Logger) Error(msg string) {
-	// TODO
+func (l *WrapLogger) Error(msg string) {
+	l.log.Error(msg)
 }
-
-func (l *Logger) DoSomething() {
-}
-
-// TODO

@@ -6,5 +6,6 @@ require (
 	github.com/heetch/confita v0.10.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.2.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.5
 )

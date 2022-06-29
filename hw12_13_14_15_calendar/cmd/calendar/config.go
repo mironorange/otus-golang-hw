@@ -15,14 +15,19 @@ import (
 // Организация конфига в main принуждает нас сужать API компонентов, использовать
 // при их конструировании только необходимые параметры, а также уменьшает вероятность циклической зависимости.
 type Config struct {
-	Logger  LoggerConf
-	Port    uint32        `config:"port"`
-	Timeout time.Duration `config:"timeout"`
-	Events EventsRepoConf
+	Logger   LoggerConf
+	Server   ServerConf
+	Timeout  time.Duration `config:"timeout"`
+	Events   EventsRepoConf
 	Database struct {
 		Driver string `config:"database-driver"`
 		Dsn    string `config:"database-dsn"`
 	}
+}
+
+type ServerConf struct {
+	Host string `config:"server-host"`
+	Port string `config:"server-port"`
 }
 
 type EventsRepoConf struct {
@@ -35,6 +40,10 @@ type LoggerConf struct {
 
 func NewConfig() *Config {
 	return &Config{
+		Server: ServerConf{
+			Host: "",
+			Port: "8080",
+		},
 		Events: EventsRepoConf{
 			Storage: "inmemory",
 		},

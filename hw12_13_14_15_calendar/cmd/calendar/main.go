@@ -6,6 +6,7 @@ import (
 	memorystorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/memory"
 	sqlstorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/sql"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -39,7 +40,6 @@ func main() {
 
 	// Инициализирую логирование приложения
 	logging := logger.New(config.Logger.Level)
-	logging.DoSomething()
 
 	var storage app.Storage
 	switch config.Events.Storage {
@@ -64,8 +64,8 @@ func main() {
 	calendar.DoSomething()
 
 	// Инициализирую сервер приложения
-	server := internalhttp.NewServer(logging, calendar)
-	server.DoSomething()
+	server := internalhttp.NewServer(net.JoinHostPort(config.Server.Host, config.Server.Port), logging, calendar)
+
 	ctx, cancelFunc := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancelFunc()

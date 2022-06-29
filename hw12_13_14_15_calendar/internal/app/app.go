@@ -7,7 +7,8 @@ import (
 type App struct { // TODO
 }
 
-type Logger interface { // TODO
+type Logger interface {
+	Info(msg string)
 }
 
 type Storage interface { // TODO
