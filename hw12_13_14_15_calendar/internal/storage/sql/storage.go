@@ -2,7 +2,9 @@ package sqlstorage
 
 import (
 	"context"
+
 	"github.com/jmoiron/sqlx"
+	// Необходимо импортировать пакет для того чтобы подключился драйвер pq.
 	_ "github.com/lib/pq"
 )
 
@@ -14,7 +16,7 @@ CREATE SCHEMA IF NOT EXISTS "events";
 -- Таблица для хранения событий в базе данных
 CREATE TABLE IF NOT EXISTS "events"."events"
 (
-	-- UUID - уникальный идентификатор события
+	-- Get - уникальный идентификатор события
     "uuid" varchar
 		constraint events_pk
 			primary key,
@@ -26,19 +28,28 @@ CREATE TABLE IF NOT EXISTS "events"."events"
 	"finished_at" varchar not null,
 	-- Описание события
 	"description" varchar not null,
-	-- UUID пользователя, владельца события
+	-- Get пользователя, владельца события
 	"user_uuid" varchar not null,
 	-- Дата и время уведомления о событии
 	"notification_at" varchar not null
 );`
 
-	sqlEventSelectById = `SELECT * FROM "events"."events" WHERE "uuid" = $1 LIMIT 1`
+	sqlEventSelectByID = `SELECT * FROM "events"."events" WHERE "uuid" = $1 LIMIT 1`
 
-	// Запрос создающий запись в базе данных о событии
-	sqlEventInsert = `INSERT INTO "events"."events" (uuid, summary, started_at, finished_at, description, user_uuid, notification_at) VALUES (:uuid, :summary, :started_at, :finished_at, :description, :user_uuid, :notification_at)`
+	sqlEventInsert = `-- Запрос создающий запись в базе данных о событии 
+INSERT INTO "events"."events"
+(uuid, summary, started_at, finished_at, description, user_uuid, notification_at)
+VALUES (:uuid, :summary, :started_at, :finished_at, :description, :user_uuid, :notification_at)`
 
-	// Запрос обновляющий запись в базе данных о событии
-	sqlEventUpdate = `UPDATE "events"."events" SET summary = $2, started_at = $3, finished_at = $4, description = $5, user_uuid = $6, notification_at = $7 WHERE uuid = $1`
+	sqlEventUpdate = `-- Запрос обновляющий запись в базе данных о событии
+UPDATE "events"."events"
+SET summary = $2,
+    started_at = $3,
+    finished_at = $4,
+    description = $5,
+    user_uuid = $6,
+    notification_at = $7
+WHERE uuid = $1`
 )
 
 type Event struct {
@@ -67,15 +78,15 @@ type EventUpdateAttributes struct {
 	FinishedAt string `db:"finished_at"`
 	// Описание события.
 	Description string `db:"description"`
-	// UUID пользователя, владельца события.
+	// Get пользователя, владельца события.
 	UserUUID string `db:"user_uuid"`
 	// Дата и время уведомления о событии.
 	NotificationAt string `db:"notification_at"`
 }
 
 type Storage struct {
-	driver string
-	dsn string
+	driver    string
+	dsn       string
 	dbConnect *sqlx.DB
 }
 
@@ -84,14 +95,14 @@ type EventStorage interface {
 	Close(ctx context.Context) error
 	Create(attributes Event) (bool, error)
 	Update(uuid string, attributes EventUpdateAttributes) (bool, error)
-	Get() (map[string]Event, error)
-	UUID(uuid string) (Event, error)
+	Select() (map[string]Event, error)
+	Get(uuid string) (Event, error)
 }
 
 func New(driver string, dsn string) EventStorage {
 	return &Storage{
 		driver: driver,
-		dsn: dsn,
+		dsn:    dsn,
 	}
 }
 
@@ -149,7 +160,7 @@ func (s *Storage) Update(uuid string, attributes EventUpdateAttributes) (bool, e
 }
 
 // Возвращает список соответствующих условию событий из хранилища, проиндексированные по идентификатору.
-func (s *Storage) Get() (map[string]Event, error) {
+func (s *Storage) Select() (map[string]Event, error) {
 	events := map[string]Event{}
 	items := []Event{}
 	err := s.dbConnect.Select(&items, `SELECT * FROM "events"."events"`)
@@ -163,12 +174,13 @@ func (s *Storage) Get() (map[string]Event, error) {
 }
 
 // Возвращает событие из хранилища по идентификатору.
-func (s *Storage) UUID(uuid string) (Event, error) {
+func (s *Storage) Get(uuid string) (Event, error) {
 	event := Event{}
-	rows, err := s.dbConnect.Queryx(sqlEventSelectById, uuid)
+	rows, err := s.dbConnect.Queryx(sqlEventSelectByID, uuid)
 	if err != nil {
 		return Event{}, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.StructScan(&event)
 		if err != nil {

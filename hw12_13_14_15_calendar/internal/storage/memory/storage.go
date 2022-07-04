@@ -9,7 +9,7 @@ import (
 var (
 	ErrFailCreateEvent = errors.New("error creating event")
 	ErrFailUpdateEvent = errors.New("error updating event")
-	ErrNotExistEvent = errors.New("event not exist")
+	ErrNotExistEvent   = errors.New("event not exist")
 )
 
 type Event struct {
@@ -38,7 +38,7 @@ type EventUpdateAttributes struct {
 	FinishedAt string
 	// Описание события - длинный текст, опционально.
 	Description string
-	// UUID пользователя, владельца события.
+	// Get пользователя, владельца события.
 	UserUUID string
 	// Дата и время уведомления о событии.
 	NotificationAt string
@@ -47,18 +47,18 @@ type EventUpdateAttributes struct {
 type EventStorage interface {
 	Create(attributes Event) (bool, error)
 	Update(uuid string, attributes EventUpdateAttributes) (bool, error)
-	Get() (map[string]Event, error)
-	UUID(uuid string) (Event, error)
+	Select() (map[string]Event, error)
+	Get(uuid string) (Event, error)
 }
 
 type Storage struct {
-	mu sync.RWMutex
+	mu     sync.RWMutex
 	events map[string]Event
 }
 
 func New() EventStorage {
 	return &Storage{
-		mu: sync.RWMutex{},
+		mu:     sync.RWMutex{},
 		events: map[string]Event{},
 	}
 }
@@ -71,7 +71,7 @@ func (s *Storage) Close(ctx context.Context) error {
 	return nil
 }
 
-// Создает новое событие
+// Создает новое событие.
 func (s *Storage) Create(e Event) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -84,7 +84,7 @@ func (s *Storage) Create(e Event) (bool, error) {
 	return true, nil
 }
 
-// Обновляет существующее в хранилище событие
+// Обновляет существующее в хранилище событие.
 func (s *Storage) Update(uuid string, attributes EventUpdateAttributes) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -105,16 +105,16 @@ func (s *Storage) Update(uuid string, attributes EventUpdateAttributes) (bool, e
 	return true, nil
 }
 
-// Возвращает список соответствующих условию событий из хранилища, проиндексированные по идентификатору
-func (s *Storage) Get() (map[string]Event, error) {
+// Возвращает список соответствующих условию событий из хранилища, проиндексированные по идентификатору.
+func (s *Storage) Select() (map[string]Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	return s.events, nil
 }
 
-// Возвращает событие из хранилища по идентификатору
-func (s *Storage) UUID(uuid string) (Event, error) {
+// Возвращает событие из хранилища по идентификатору.
+func (s *Storage) Get(uuid string) (Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

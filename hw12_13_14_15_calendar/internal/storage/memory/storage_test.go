@@ -2,6 +2,7 @@ package memorystorage
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -71,7 +72,7 @@ func TestUpdateEvent(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, ok)
 
-	event, err = s.UUID(uuid)
+	event, err = s.Get(uuid)
 	require.NoError(t, err)
 	require.Equal(t, eventUpdateAttributes.Summary, event.Summary)
 	require.Equal(t, eventUpdateAttributes.StartedAt, event.StartedAt)

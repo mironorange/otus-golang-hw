@@ -49,14 +49,14 @@ func main() {
 
 	// Обновить запись о событии в базе данных
 	uuid = "a3970cf5-d262-431d-99dc-16bb95840032"
-	event, err := storage.UUID(uuid)
+	event, err := storage.Get(uuid)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(event)
 
 	// Обновить запись о событии в базе данных
-	events, err := storage.Get()
+	events, err := storage.Select()
 	if err != nil {
 		log.Fatal(err)
 	}

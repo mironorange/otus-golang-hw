@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
+	"os"
+	"time"
+
 	"github.com/heetch/confita"
 	"github.com/heetch/confita/backend"
 	"github.com/heetch/confita/backend/env"
 	"github.com/heetch/confita/backend/file"
 	"github.com/heetch/confita/backend/flags"
-	"os"
-	"time"
 )
 
 // При желании конфигурацию можно вынести в internal/config.

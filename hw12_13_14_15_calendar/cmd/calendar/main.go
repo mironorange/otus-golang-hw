@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	memorystorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/memory"
-	sqlstorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/sql"
 	"log"
 	"net"
 	"os"
@@ -15,6 +13,8 @@ import (
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/app"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/server/http"
+	memorystorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
 var configFile string
@@ -61,7 +61,6 @@ func main() {
 
 	// Инициализирую объект приложения
 	calendar := app.New(logging, storage)
-	calendar.DoSomething()
 
 	// Инициализирую сервер приложения
 	server := internalhttp.NewServer(net.JoinHostPort(config.Server.Host, config.Server.Port), logging, calendar)

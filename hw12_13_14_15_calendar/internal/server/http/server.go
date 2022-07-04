@@ -61,5 +61,5 @@ func (s *WrapServer) Start(ctx context.Context) error {
 }
 
 func (s *WrapServer) Stop(ctx context.Context) error {
-	return s.server.Shutdown(ctx);
+	return s.server.Shutdown(ctx)
 }
