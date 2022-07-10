@@ -1,0 +1,11 @@
+{
+  "port": 2121,
+  "timeout": 2,
+  "events": {
+    "storage": "inmemory"
+  },
+  "database": {
+    "driver": "postgres",
+    "dsn": "postgres://whoever:qwerty@localhost/test?sslmode=disable"
+  }
+}

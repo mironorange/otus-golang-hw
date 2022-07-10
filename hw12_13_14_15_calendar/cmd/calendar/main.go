@@ -3,21 +3,24 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/app"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/logger"
+	internalhttp "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/server/http"
+	memorystorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
 var configFile string
 
 func init() {
-	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
+	flag.StringVar(&configFile, "config", "/etc/calendar/config.json", "Path to configuration file")
 }
 
 func main() {
@@ -28,18 +31,45 @@ func main() {
 		return
 	}
 
+	// Инициализирую конфигурацию приложения
 	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	ctxConfig := context.TODO()
+	if err := LoadConfig(ctxConfig, config, configFile); err != nil {
+		log.Fatal(err)
+	}
 
-	storage := memorystorage.New()
-	calendar := app.New(logg, storage)
+	// Инициализирую логирование приложения
+	logging := logger.New(config.Logger.Level)
 
-	server := internalhttp.NewServer(logg, calendar)
+	var storage app.Storage
+	switch config.Events.Storage {
+	case "inmemory":
+		s := memorystorage.New()
+		storage = s.(app.Storage)
+	case "database":
+		driver := config.Database.Driver
+		dsn := config.Database.Dsn
+		s := sqlstorage.New(driver, dsn)
+		ctxStorage := context.TODO()
+		if err := s.Connect(ctxStorage); err != nil {
+			log.Fatal(err)
+		}
+		storage = s.(app.Storage)
+	default:
+		log.Fatal("storage not configured")
+	}
 
-	ctx, cancel := signal.NotifyContext(context.Background(),
+	// Инициализирую объект приложения
+	calendar := app.New(logging, storage)
+
+	// Инициализирую сервер приложения
+	server := internalhttp.NewServer(net.JoinHostPort(config.Server.Host, config.Server.Port), logging, calendar)
+
+	ctx, cancelFunc := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	defer cancel()
+	defer cancelFunc()
 
+	// Обрабатываю запросы к серверу приложения
 	go func() {
 		<-ctx.Done()
 
@@ -47,15 +77,15 @@ func main() {
 		defer cancel()
 
 		if err := server.Stop(ctx); err != nil {
-			logg.Error("failed to stop http server: " + err.Error())
+			logging.Error("failed to stop http server: " + err.Error())
 		}
 	}()
 
-	logg.Info("calendar is running...")
+	logging.Info("calendar is running...")
 
 	if err := server.Start(ctx); err != nil {
-		logg.Error("failed to start http server: " + err.Error())
-		cancel()
+		logging.Error("failed to start http server: " + err.Error())
+		cancelFunc()
 		os.Exit(1) //nolint:gocritic
 	}
 }
