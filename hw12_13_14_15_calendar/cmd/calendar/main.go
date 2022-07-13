@@ -3,9 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
-	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/pb"
-	"google.golang.org/grpc"
 	"log"
 	"net"
 	"os/signal"
@@ -14,7 +11,7 @@ import (
 	"time"
 
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/app"
-	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/grpcserver"
+	internalgrpc "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/grpcserver"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/memory"
@@ -68,12 +65,7 @@ func main() {
 
 	// Инициализирую сервер приложения
 	server := internalhttp.NewServer(net.JoinHostPort(config.Server.Host, config.Server.Port), logging, calendar)
-
-	grpcServer := grpc.NewServer()
-	grpcService := new(grpcserver.Service)
-	grpcService.SetApp(calendar)
-
-	pb.RegisterCalendarServer(grpcServer, grpcService)
+	grpcServer := internalgrpc.NewServer(net.JoinHostPort(config.RPCServer.Host, config.RPCServer.Port), logging, calendar)
 
 	ctx, cancelFunc := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -82,15 +74,15 @@ func main() {
 	// Обрабатываю запросы к серверу приложения
 	go func() {
 		<-ctx.Done()
-
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 		defer cancel()
 
 		if err := server.Stop(ctx); err != nil {
 			logging.Error("failed to stop http server: " + err.Error())
 		}
-
-		grpcServer.Stop()
+		if err := grpcServer.Stop(ctx); err != nil {
+			logging.Error("failed to stop grpc server: " + err.Error())
+		}
 	}()
 
 	logging.Info("calendar is running...")
@@ -100,9 +92,7 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-
 		logging.Info("HTTP Server is running...")
-
 		if err := server.Start(ctx); err != nil {
 			logging.Error("failed to start http server: " + err.Error())
 			cancelFunc()
@@ -111,13 +101,10 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-
-		if listener, err := net.Listen("tcp", ":50051"); err == nil {
-			logging.Info(fmt.Sprintf("Starting gRPC server on %s", listener.Addr().String()))
-			if err := grpcServer.Serve(listener); err != nil {
-				logging.Error("failed to start http server: " + err.Error())
-				cancelFunc()
-			}
+		logging.Info("gRPC Server is running...")
+		if err := grpcServer.Start(ctx); err != nil {
+			logging.Error("failed to start grpc server: " + err.Error())
+			cancelFunc()
 		}
 	}()
 

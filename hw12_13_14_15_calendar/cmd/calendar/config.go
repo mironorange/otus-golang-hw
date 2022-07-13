@@ -16,19 +16,23 @@ import (
 // Организация конфига в main принуждает нас сужать API компонентов, использовать
 // при их конструировании только необходимые параметры, а также уменьшает вероятность циклической зависимости.
 type Config struct {
-	Logger   LoggerConf
-	Server   ServerConf
-	Timeout  time.Duration `config:"timeout"`
-	Events   EventsRepoConf
-	Database struct {
-		Driver string `config:"database-driver"`
-		Dsn    string `config:"database-dsn"`
-	}
+	Logger    LoggerConf
+	Server    HTTPServerConf
+	RPCServer RPCServerConf
+	Events    EventsRepoConf
+	Database  DatabaseConf
 }
 
-type ServerConf struct {
-	Host string `config:"server-host"`
-	Port string `config:"server-port"`
+type HTTPServerConf struct {
+	Host    string        `config:"server-host"`
+	Port    string        `config:"server-port"`
+	Timeout time.Duration `config:"server-timeout"`
+}
+
+type RPCServerConf struct {
+	Host    string        `config:"rpcserver-host"`
+	Port    string        `config:"rpcserver-port"`
+	Timeout time.Duration `config:"rpcserver-timeout"`
 }
 
 type EventsRepoConf struct {
@@ -39,11 +43,22 @@ type LoggerConf struct {
 	Level string `config:"logger-level"`
 }
 
+type DatabaseConf struct {
+	Driver string `config:"database-driver"`
+	Dsn    string `config:"database-dsn"`
+}
+
 func NewConfig() *Config {
 	return &Config{
-		Server: ServerConf{
-			Host: "",
-			Port: "8080",
+		Server: HTTPServerConf{
+			Host:    "",
+			Port:    "8080",
+			Timeout: time.Second * 3,
+		},
+		RPCServer: RPCServerConf{
+			Host:    "",
+			Port:    "50051",
+			Timeout: time.Second * 3,
 		},
 		Events: EventsRepoConf{
 			Storage: "inmemory",
