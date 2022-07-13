@@ -3,14 +3,18 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/pb"
+	"google.golang.org/grpc"
 	"log"
 	"net"
-	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/app"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/grpcserver"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/memory"
@@ -65,6 +69,12 @@ func main() {
 	// Инициализирую сервер приложения
 	server := internalhttp.NewServer(net.JoinHostPort(config.Server.Host, config.Server.Port), logging, calendar)
 
+	grpcServer := grpc.NewServer()
+	grpcService := new(grpcserver.Service)
+	grpcService.SetApp(calendar)
+
+	pb.RegisterCalendarServer(grpcServer, grpcService)
+
 	ctx, cancelFunc := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancelFunc()
@@ -79,13 +89,37 @@ func main() {
 		if err := server.Stop(ctx); err != nil {
 			logging.Error("failed to stop http server: " + err.Error())
 		}
+
+		grpcServer.Stop()
 	}()
 
 	logging.Info("calendar is running...")
 
-	if err := server.Start(ctx); err != nil {
-		logging.Error("failed to start http server: " + err.Error())
-		cancelFunc()
-		os.Exit(1) //nolint:gocritic
-	}
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+
+		logging.Info("HTTP Server is running...")
+
+		if err := server.Start(ctx); err != nil {
+			logging.Error("failed to start http server: " + err.Error())
+			cancelFunc()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+
+		if listener, err := net.Listen("tcp", ":50051"); err == nil {
+			logging.Info(fmt.Sprintf("Starting gRPC server on %s", listener.Addr().String()))
+			if err := grpcServer.Serve(listener); err != nil {
+				logging.Error("failed to start http server: " + err.Error())
+				cancelFunc()
+			}
+		}
+	}()
+
+	wg.Wait()
 }

@@ -2,6 +2,84 @@ syntax = "proto3";
 
 package event;
 
+// protoc api/EventService.proto --go_out=./internal/pb --go-grpc_out=./internal/pb
+option go_package = "./;pb";
+
+service Calendar {
+    rpc CreateEvent(CreateEventRequest) returns (CreateEventResponse) {}
+    rpc UpdateEvent(UpdateEventRequest) returns (UpdateEventResponse) {}
+    rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}
+    rpc GetEvent(GetEventRequest) returns (GetEventResponse) {}
+}
+
 message Event {
-    // TODO
+    // UUID - уникальный идентификатор события.
+    string uuid = 1;
+    // Заголовок - короткий текст.
+    string summary = 2;
+    // Unix timestamp даты и времени начала события.
+    int64 startedAt = 3;
+    // Unix timestamp даты и времени завершения события.
+    int64 finishedAt = 4;
+    // Описание события - длинный текст.
+    string description = 5;
+    // UUID пользователя, владельца события.
+    string userUuid = 6;
+    // Unix timestamp даты и времени уведомления о событии.
+    uint64 notificationAt = 7;
+}
+
+message UpdateEventAttributes {
+    // Заголовок - короткий текст.
+    string summary = 1;
+    // Unix timestamp даты и времени начала события.
+    int64 startedAt = 2;
+    // Unix timestamp даты и времени завершения события.
+    int64 finishedAt = 3;
+    // Описание события - длинный текст.
+    string description = 4;
+    // UUID пользователя, владельца события.
+    string userUuid = 5;
+    // Unix timestamp даты и времени уведомления о событии.
+    uint64 notificationAt = 6;
+}
+
+message CreateEventRequest {
+    // UUID - уникальный идентификатор события.
+    string uuid = 1;
+    // Заголовок - короткий текст.
+    string summary = 2;
+    // Unix timestamp даты и времени начала события.
+    int64 startedAt = 3;
+    // Unix timestamp даты и времени завершения события.
+    int64 finishedAt = 4;
+    // Описание события - длинный текст.
+    string description = 5;
+    // UUID пользователя, владельца события.
+    string userUuid = 6;
+    // Unix timestamp даты и времени уведомления о событии.
+    uint64 notificationAt = 7;
+}
+
+message CreateEventResponse {}
+
+message UpdateEventRequest {
+    string uuid = 1;
+    UpdateEventAttributes attributes = 2;
+}
+
+message UpdateEventResponse {}
+
+message GetEventsRequest {}
+
+message GetEventsResponse {
+    repeated Event items = 1;
+}
+
+message GetEventRequest {
+    string uuid = 1;
+}
+
+message GetEventResponse {
+    Event item = 1;
 }
