@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage"
 	sqlstorage "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage/sql"
 	"log"
 )
@@ -11,23 +12,33 @@ import (
 func main() {
 	driver := "postgres"
 	dsn := "postgres://whoever:qwerty@localhost/test?sslmode=disable"
-	storage := sqlstorage.New(driver, dsn)
+	s := sqlstorage.New(driver, dsn)
 	ctx := context.Background()
-	if err := storage.Connect(ctx); err != nil {
+	if err := s.Connect(ctx); err != nil {
 		log.Fatal(err)
 	}
 
 	// Создать в базе данных запись о событии
-	e := sqlstorage.Event{
-		UUID:           "a3970cf5-d262-431d-99dc-16bb95840032",
+	e := storage.Event{
+		UUID:           "1753b11e-0841-4b6e-9d24-c21ea1b2d83d",
 		Summary:        "Проверить создание события из main.go",
-		StartedAt:      "2022-06-11 11:00:00",
-		FinishedAt:     "2022-06-11 12:00:00",
+		StartedAt:      1654070400,
+		FinishedAt:     1654074000,
 		Description:    "После запуска скрипта это событие можно увидеть в базе данных",
 		UserUUID:       "a6e592bc-8627-4e13-b4a6-d7072864602a",
-		NotificationAt: "2022-06-11 10:00:00",
+		NotificationAt: 1654070400,
 	}
-	if _, err := storage.Create(e); err != nil {
+	err := s.CreateEvent(
+		ctx,
+		e.UUID,
+		e.Summary,
+		e.StartedAt,
+		e.FinishedAt,
+		e.Description,
+		e.UserUUID,
+		e.NotificationAt,
+	)
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -35,28 +46,38 @@ func main() {
 	
 	// Обновить запись о событии в базе данных
 	uuid = "a3970cf5-d262-431d-99dc-16bb95840032"
-	attrs := sqlstorage.EventUpdateAttributes{
+	attrs := storage.EventUpdateAttributes{
 		Summary:        "Проверить изменения события из main.go",
-		StartedAt:      "2022-06-21 11:00:00",
-		FinishedAt:     "2022-06-21 12:00:00",
+		StartedAt:      1654243200,
+		FinishedAt:     1654250400,
 		Description:    "После запуска скрипта это событие должно измениться в базе данных",
 		UserUUID:       "a6e592bc-8627-4e13-b4a6-d7072864602a",
-		NotificationAt: "2022-06-21 10:00:00",
+		NotificationAt: 1654246800,
 	}
-	if _, err := storage.Update(uuid, attrs); err != nil {
+	err = s.UpdateEvent(
+		ctx,
+		uuid,
+		attrs.Summary,
+		attrs.StartedAt,
+		attrs.FinishedAt,
+		attrs.Description,
+		attrs.UserUUID,
+		attrs.NotificationAt,
+	)
+	if  err != nil {
 		log.Fatal(err)
 	}
 
 	// Обновить запись о событии в базе данных
 	uuid = "a3970cf5-d262-431d-99dc-16bb95840032"
-	event, err := storage.Get(uuid)
+	event, err := s.GetEventByUUID(ctx, uuid)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(event)
 
 	// Обновить запись о событии в базе данных
-	events, err := storage.Select()
+	events, err := s.GetEvents(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}

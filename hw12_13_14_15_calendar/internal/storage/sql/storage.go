@@ -6,6 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	// Необходимо импортировать пакет для того чтобы подключился драйвер pq.
 	_ "github.com/lib/pq"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage"
 )
 
 var (
@@ -22,19 +23,21 @@ CREATE TABLE IF NOT EXISTS "events"."events"
 			primary key,
 	-- Заголовок - короткий текст
 	"summary" varchar not null,
-	-- Дата и время начала события
-	"started_at" varchar not null,
-	-- Дата и время начала события
-	"finished_at" varchar not null,
+	-- Unix timestamp даты и времени начала события.
+	"started_at" int not null,
+	-- Unix timestamp даты и времени завершения события.
+	"finished_at" int not null,
 	-- Описание события
 	"description" varchar not null,
 	-- Get пользователя, владельца события
-	"user_uuid" varchar not null,
-	-- Дата и время уведомления о событии
-	"notification_at" varchar not null
+	"user_uuid" int not null,
+	-- Unix timestamp даты и времени уведомления о событии.
+	"notification_at" int not null
 );`
 
 	sqlEventSelectByID = `SELECT * FROM "events"."events" WHERE "uuid" = $1 LIMIT 1`
+
+	sqlGetEvents = `SELECT * FROM "events"."events" WHERE "notification_at" > $1`
 
 	sqlEventInsert = `-- Запрос создающий запись в базе данных о событии 
 INSERT INTO "events"."events"
@@ -52,38 +55,6 @@ SET summary = $2,
 WHERE uuid = $1`
 )
 
-type Event struct {
-	// UUID - уникальный идентификатор события.
-	UUID string `db:"uuid"`
-	// Заголовок - короткий текст.
-	Summary string `db:"summary"`
-	// Дата и время начала события.
-	StartedAt string `db:"started_at"`
-	// Дата и время начала события.
-	FinishedAt string `db:"finished_at"`
-	// Описание события.
-	Description string `db:"description"`
-	// UUID пользователя, владельца события.
-	UserUUID string `db:"user_uuid"`
-	// Дата и время уведомления о событии.
-	NotificationAt string `db:"notification_at"`
-}
-
-type EventUpdateAttributes struct {
-	// Заголовок - короткий текст.
-	Summary string `db:"summary"`
-	// Дата и время начала события.
-	StartedAt string `db:"started_at"`
-	// Дата и время начала события.
-	FinishedAt string `db:"finished_at"`
-	// Описание события.
-	Description string `db:"description"`
-	// Get пользователя, владельца события.
-	UserUUID string `db:"user_uuid"`
-	// Дата и время уведомления о событии.
-	NotificationAt string `db:"notification_at"`
-}
-
 type Storage struct {
 	driver    string
 	dsn       string
@@ -93,10 +64,7 @@ type Storage struct {
 type EventStorage interface {
 	Connect(ctx context.Context) error
 	Close(ctx context.Context) error
-	Create(attributes Event) (bool, error)
-	Update(uuid string, attributes EventUpdateAttributes) (bool, error)
-	Select() (map[string]Event, error)
-	Get(uuid string) (Event, error)
+	storage.EventStorage
 }
 
 func New(driver string, dsn string) EventStorage {
@@ -125,66 +93,88 @@ func (s *Storage) Close(ctx context.Context) error {
 }
 
 // Добавляет в базу данных новое событие.
-func (s *Storage) Create(event Event) (bool, error) {
+func (s *Storage) CreateEvent(
+	ctx context.Context,
+	uuid string,
+	summary string,
+	startedAt int32,
+	finishedAt int32,
+	description string,
+	userUUID string,
+	notificationAt int32,
+) error {
 	tx := s.dbConnect.MustBegin()
+	event := storage.Event{
+		UUID:           uuid,
+		Summary:        summary,
+		StartedAt:      startedAt,
+		FinishedAt:     finishedAt,
+		Description:    description,
+		UserUUID:       userUUID,
+		NotificationAt: notificationAt,
+	}
 	if _, err := tx.NamedExec(sqlEventInsert, &event); err != nil {
 		_ = tx.Rollback()
-		return false, err
+		return err
 	}
 	if err := tx.Commit(); err != nil {
-		return false, err
+		return err
 	}
-	return true, nil
+	return nil
 }
 
 // Обновляет существующее в хранилище событие.
-func (s *Storage) Update(uuid string, attributes EventUpdateAttributes) (bool, error) {
+func (s *Storage) UpdateEvent(
+	ctx context.Context,
+	uuid string,
+	summary string,
+	startedAt int32,
+	finishedAt int32,
+	description string,
+	userUUID string,
+	notificationAt int32,
+) error {
 	tx := s.dbConnect.MustBegin()
 	args := []interface{}{
 		uuid,
-		attributes.Summary,
-		attributes.StartedAt,
-		attributes.FinishedAt,
-		attributes.Description,
-		attributes.UserUUID,
-		attributes.NotificationAt,
+		summary,
+		startedAt,
+		finishedAt,
+		description,
+		userUUID,
+		notificationAt,
 	}
 	if _, err := tx.Exec(sqlEventUpdate, args...); err != nil {
 		_ = tx.Rollback()
-		return false, err
+		return err
 	}
 	if err := tx.Commit(); err != nil {
-		return false, err
+		return err
 	}
-	return true, nil
+	return nil
 }
 
-// Возвращает список соответствующих условию событий из хранилища, проиндексированные по идентификатору.
-func (s *Storage) Select() (map[string]Event, error) {
-	events := map[string]Event{}
-	items := []Event{}
-	err := s.dbConnect.Select(&items, `SELECT * FROM "events"."events"`)
-	if err != nil {
-		return events, err
-	}
-	for _, event := range items {
-		events[event.UUID] = event
-	}
-	return events, nil
+// Возвращает список соответствующих условию событий из хранилища.
+func (s *Storage) GetEvents(
+	ctx context.Context,
+	sinceNotificationAt int32,
+) ([]storage.Event, error) {
+	var events []storage.Event
+	err := s.dbConnect.Select(&events, sqlGetEvents, sinceNotificationAt)
+	return events, err
 }
 
-// Возвращает событие из хранилища по идентификатору.
-func (s *Storage) Get(uuid string) (Event, error) {
-	event := Event{}
+func (s *Storage) GetEventByUUID(ctx context.Context, uuid string) (storage.Event, error) {
+	var event storage.Event
 	rows, err := s.dbConnect.Queryx(sqlEventSelectByID, uuid)
 	if err != nil {
-		return Event{}, err
+		return storage.Event{}, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		err = rows.StructScan(&event)
 		if err != nil {
-			return Event{}, err
+			return storage.Event{}, err
 		}
 	}
 	return event, nil
