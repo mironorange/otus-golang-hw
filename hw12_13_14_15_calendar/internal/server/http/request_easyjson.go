@@ -105,15 +105,15 @@ func easyjson3c9d2b01DecodeGithubComMironorangeOtusGolangHwHw12131415CalendarInt
 		case "summary":
 			out.Summary = string(in.String())
 		case "startedAt":
-			out.StartedAt = int(in.Int())
+			out.StartedAt = int32(in.Int32())
 		case "finishedAt":
-			out.FinishedAt = int(in.Int())
+			out.FinishedAt = int32(in.Int32())
 		case "description":
 			out.Description = string(in.String())
 		case "userUuid":
 			out.UserUUID = string(in.String())
 		case "notificationAt":
-			out.NotificationAt = int(in.Int())
+			out.NotificationAt = int32(in.Int32())
 		default:
 			in.SkipRecursive()
 		}
@@ -136,12 +136,12 @@ func easyjson3c9d2b01EncodeGithubComMironorangeOtusGolangHwHw12131415CalendarInt
 	{
 		const prefix string = ",\"startedAt\":"
 		out.RawString(prefix)
-		out.Int(int(in.StartedAt))
+		out.Int32(int32(in.StartedAt))
 	}
 	{
 		const prefix string = ",\"finishedAt\":"
 		out.RawString(prefix)
-		out.Int(int(in.FinishedAt))
+		out.Int32(int32(in.FinishedAt))
 	}
 	{
 		const prefix string = ",\"description\":"
@@ -156,7 +156,7 @@ func easyjson3c9d2b01EncodeGithubComMironorangeOtusGolangHwHw12131415CalendarInt
 	{
 		const prefix string = ",\"notificationAt\":"
 		out.RawString(prefix)
-		out.Int(int(in.NotificationAt))
+		out.Int32(int32(in.NotificationAt))
 	}
 	out.RawByte('}')
 }
@@ -208,15 +208,15 @@ func easyjson3c9d2b01DecodeGithubComMironorangeOtusGolangHwHw12131415CalendarInt
 		case "summary":
 			out.Summary = string(in.String())
 		case "startedAt":
-			out.StartedAt = int(in.Int())
+			out.StartedAt = int32(in.Int32())
 		case "finishedAt":
-			out.FinishedAt = int(in.Int())
+			out.FinishedAt = int32(in.Int32())
 		case "description":
 			out.Description = string(in.String())
 		case "userUuid":
 			out.UserUUID = string(in.String())
 		case "notificationAt":
-			out.NotificationAt = int(in.Int())
+			out.NotificationAt = int32(in.Int32())
 		default:
 			in.SkipRecursive()
 		}
@@ -244,12 +244,12 @@ func easyjson3c9d2b01EncodeGithubComMironorangeOtusGolangHwHw12131415CalendarInt
 	{
 		const prefix string = ",\"startedAt\":"
 		out.RawString(prefix)
-		out.Int(int(in.StartedAt))
+		out.Int32(int32(in.StartedAt))
 	}
 	{
 		const prefix string = ",\"finishedAt\":"
 		out.RawString(prefix)
-		out.Int(int(in.FinishedAt))
+		out.Int32(int32(in.FinishedAt))
 	}
 	{
 		const prefix string = ",\"description\":"
@@ -264,7 +264,7 @@ func easyjson3c9d2b01EncodeGithubComMironorangeOtusGolangHwHw12131415CalendarInt
 	{
 		const prefix string = ",\"notificationAt\":"
 		out.RawString(prefix)
-		out.Int(int(in.NotificationAt))
+		out.Int32(int32(in.NotificationAt))
 	}
 	out.RawByte('}')
 }

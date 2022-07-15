@@ -160,7 +160,7 @@ func createEventsHandler(l Logger, a Application) http.HandlerFunc {
 	}
 }
 
-type Logger interface { // TODO
+type Logger interface {
 	Info(msg string)
 	Error(msg string)
 }
@@ -170,21 +170,21 @@ type Application interface {
 		ctx context.Context,
 		uuid string,
 		summary string,
-		startedAt int,
-		finishedAt int,
+		startedAt int32,
+		finishedAt int32,
 		description string,
 		userUUID string,
-		notificationAt int,
+		notificationAt int32,
 	) error
 	UpdateEvent(
 		ctx context.Context,
 		uuid string,
 		summary string,
-		startedAt int,
-		finishedAt int,
+		startedAt int32,
+		finishedAt int32,
 		description string,
 		userUUID string,
-		notificationAt int,
+		notificationAt int32,
 	) error
 	GetEvents(
 		ctx context.Context,

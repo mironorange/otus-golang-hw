@@ -39,11 +39,11 @@ func (s *Storage) CreateEvent(
 	ctx context.Context,
 	uuid string,
 	summary string,
-	startedAt int,
-	finishedAt int,
+	startedAt int32,
+	finishedAt int32,
 	description string,
 	userUUID string,
-	notificationAt int,
+	notificationAt int32,
 ) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -70,11 +70,11 @@ func (s *Storage) UpdateEvent(
 	ctx context.Context,
 	uuid string,
 	summary string,
-	startedAt int,
-	finishedAt int,
+	startedAt int32,
+	finishedAt int32,
 	description string,
 	userUUID string,
-	notificationAt int,
+	notificationAt int32,
 ) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

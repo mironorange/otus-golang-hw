@@ -19,21 +19,21 @@ type Storage interface {
 		ctx context.Context,
 		uuid string,
 		summary string,
-		startedAt int,
-		finishedAt int,
+		startedAt int32,
+		finishedAt int32,
 		description string,
 		userUUID string,
-		notificationAt int,
+		notificationAt int32,
 	) error
 	UpdateEvent(
 		ctx context.Context,
 		uuid string,
 		summary string,
-		startedAt int,
-		finishedAt int,
+		startedAt int32,
+		finishedAt int32,
 		description string,
 		userUUID string,
-		notificationAt int,
+		notificationAt int32,
 	) error
 	GetEvents(
 		ctx context.Context,
@@ -54,11 +54,11 @@ func (a *App) CreateEvent(
 	ctx context.Context,
 	uuid string,
 	summary string,
-	startedAt int,
-	finishedAt int,
+	startedAt int32,
+	finishedAt int32,
 	description string,
 	userUUID string,
-	notificationAt int,
+	notificationAt int32,
 ) error {
 	return a.storage.CreateEvent(
 		ctx,
@@ -76,11 +76,11 @@ func (a *App) UpdateEvent(
 	ctx context.Context,
 	uuid string,
 	summary string,
-	startedAt int,
-	finishedAt int,
+	startedAt int32,
+	finishedAt int32,
 	description string,
 	userUUID string,
-	notificationAt int,
+	notificationAt int32,
 ) error {
 	return a.storage.UpdateEvent(
 		ctx,

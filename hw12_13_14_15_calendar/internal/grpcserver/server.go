@@ -58,11 +58,11 @@ func (s *EventsService) CreateEvent(ctx context.Context, req *pb.CreateEventRequ
 		ctx,
 		req.Uuid,
 		req.Summary,
-		int(req.StartedAt),
-		int(req.FinishedAt),
+		req.StartedAt,
+		req.FinishedAt,
 		req.Description,
 		req.UserUuid,
-		int(req.NotificationAt),
+		req.NotificationAt,
 	)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error when trying to create event")
@@ -78,11 +78,11 @@ func (s *EventsService) UpdateEvent(ctx context.Context, req *pb.UpdateEventRequ
 		ctx,
 		uuid,
 		attrs.Summary,
-		int(attrs.StartedAt),
-		int(attrs.FinishedAt),
+		attrs.StartedAt,
+		attrs.FinishedAt,
 		attrs.Description,
 		attrs.UserUuid,
-		int(attrs.NotificationAt),
+		attrs.NotificationAt,
 	)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error when trying to update event")
@@ -102,11 +102,11 @@ func (s *EventsService) GetEvents(ctx context.Context, req *pb.GetEventsRequest)
 		es = append(es, &pb.Event{
 			Uuid:           event.UUID,
 			Summary:        event.Summary,
-			StartedAt:      int64(event.StartedAt),
-			FinishedAt:     int64(event.FinishedAt),
+			StartedAt:      event.StartedAt,
+			FinishedAt:     event.FinishedAt,
 			Description:    event.Description,
 			UserUuid:       event.UserUUID,
-			NotificationAt: 0,
+			NotificationAt: event.NotificationAt,
 		})
 	}
 
@@ -123,11 +123,11 @@ func (s *EventsService) GetEvent(ctx context.Context, req *pb.GetEventRequest) (
 	e := &pb.Event{
 		Uuid:           event.UUID,
 		Summary:        event.Summary,
-		StartedAt:      int64(event.StartedAt),
-		FinishedAt:     int64(event.FinishedAt),
+		StartedAt:      event.StartedAt,
+		FinishedAt:     event.FinishedAt,
 		Description:    event.Description,
 		UserUuid:       event.UserUUID,
-		NotificationAt: 0,
+		NotificationAt: event.NotificationAt,
 	}
 
 	return &pb.GetEventResponse{Item: e}, nil

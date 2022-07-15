@@ -7,21 +7,21 @@ type EventStorage interface {
 		ctx context.Context,
 		uuid string,
 		summary string,
-		startedAt int,
-		finishedAt int,
+		startedAt int32,
+		finishedAt int32,
 		description string,
 		userUUID string,
-		notificationAt int,
+		notificationAt int32,
 	) error
 	UpdateEvent(
 		ctx context.Context,
 		uuid string,
 		summary string,
-		startedAt int,
-		finishedAt int,
+		startedAt int32,
+		finishedAt int32,
 		description string,
 		userUUID string,
-		notificationAt int,
+		notificationAt int32,
 	) error
 	GetEvents(
 		ctx context.Context,
@@ -38,28 +38,28 @@ type Event struct {
 	// Заголовок - короткий текст.
 	Summary string `db:"summary"`
 	// Unix timestamp даты и времени начала события.
-	StartedAt int `db:"started_at"`
+	StartedAt int32 `db:"started_at"`
 	// Unix timestamp даты и времени завершения события.
-	FinishedAt int `db:"finished_at"`
+	FinishedAt int32 `db:"finished_at"`
 	// Описание события - длинный текст, опционально.
 	Description string `db:"description"`
 	// UUID пользователя, владельца события.
 	UserUUID string `db:"user_uuid"`
 	// Unix timestamp даты и времени уведомления о событии.
-	NotificationAt int `db:"notification_at"`
+	NotificationAt int32 `db:"notification_at"`
 }
 
 type EventUpdateAttributes struct {
 	// Заголовок - короткий текст.
 	Summary string `db:"summary"`
 	// Unix timestamp даты и времени начала события.
-	StartedAt int `db:"started_at"`
+	StartedAt int32 `db:"started_at"`
 	// Unix timestamp даты и времени завершения события.
-	FinishedAt int `db:"finished_at"`
+	FinishedAt int32 `db:"finished_at"`
 	// Описание события.
 	Description string `db:"description"`
 	// Get пользователя, владельца события.
 	UserUUID string `db:"user_uuid"`
 	// Unix timestamp даты и времени уведомления о событии.
-	NotificationAt int `db:"notification_at"`
+	NotificationAt int32 `db:"notification_at"`
 }

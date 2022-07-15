@@ -18,30 +18,30 @@ message Event {
     // Заголовок - короткий текст.
     string summary = 2;
     // Unix timestamp даты и времени начала события.
-    int64 startedAt = 3;
+    int32 startedAt = 3;
     // Unix timestamp даты и времени завершения события.
-    int64 finishedAt = 4;
+    int32 finishedAt = 4;
     // Описание события - длинный текст.
     string description = 5;
     // UUID пользователя, владельца события.
     string userUuid = 6;
     // Unix timestamp даты и времени уведомления о событии.
-    uint64 notificationAt = 7;
+    int32 notificationAt = 7;
 }
 
 message UpdateEventAttributes {
     // Заголовок - короткий текст.
     string summary = 1;
     // Unix timestamp даты и времени начала события.
-    int64 startedAt = 2;
+    int32 startedAt = 2;
     // Unix timestamp даты и времени завершения события.
-    int64 finishedAt = 3;
+    int32 finishedAt = 3;
     // Описание события - длинный текст.
     string description = 4;
     // UUID пользователя, владельца события.
     string userUuid = 5;
     // Unix timestamp даты и времени уведомления о событии.
-    uint64 notificationAt = 6;
+    int32 notificationAt = 6;
 }
 
 message CreateEventRequest {
@@ -50,15 +50,15 @@ message CreateEventRequest {
     // Заголовок - короткий текст.
     string summary = 2;
     // Unix timestamp даты и времени начала события.
-    int64 startedAt = 3;
+    int32 startedAt = 3;
     // Unix timestamp даты и времени завершения события.
-    int64 finishedAt = 4;
+    int32 finishedAt = 4;
     // Описание события - длинный текст.
     string description = 5;
     // UUID пользователя, владельца события.
     string userUuid = 6;
     // Unix timestamp даты и времени уведомления о событии.
-    uint64 notificationAt = 7;
+    int32 notificationAt = 7;
 }
 
 message CreateEventResponse {}

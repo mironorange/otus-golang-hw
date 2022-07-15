@@ -18,12 +18,12 @@ import (
 func TestCreateEvent(t *testing.T) {
 	logging := logger.New("INFO")
 	storage := memorystorage.New().(app.Storage)
-	app := app.New(logging, storage)
+	a := app.New(logging, storage)
 
 	mux := http.NewServeMux()
 
 	helloHandler := http.HandlerFunc(hello)
-	eventsHandler := createEventsHandler(logging, app)
+	eventsHandler := createEventsHandler(logging, a)
 	mux.Handle("/events/", loggingMiddleware(eventsHandler, logging))
 	mux.Handle("/", helloHandler)
 
