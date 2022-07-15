@@ -92,7 +92,7 @@ func (s *EventsService) UpdateEvent(ctx context.Context, req *pb.UpdateEventRequ
 
 func (s *EventsService) GetEvents(ctx context.Context, req *pb.GetEventsRequest) (*pb.GetEventsResponse, error) {
 	s.logger.Info("Called GetEvents")
-	events, err := s.application.GetEvents(ctx)
+	events, err := s.application.GetEvents(ctx, req.SinceNotificationAt)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error when trying to get events")
 	}

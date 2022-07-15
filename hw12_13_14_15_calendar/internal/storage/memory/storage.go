@@ -96,12 +96,17 @@ func (s *Storage) UpdateEvent(
 }
 
 // Возвращает список соответствующих условию событий из хранилища, проиндексированные по идентификатору.
-func (s *Storage) GetEvents(ctx context.Context) ([]storage.Event, error) {
+func (s *Storage) GetEvents(
+	ctx context.Context,
+	sinceNotificationAt int32,
+) ([]storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	events := make([]storage.Event, 0, len(s.events))
-	for _, v := range s.events {
-		events = append(events, v)
+	for _, event := range s.events {
+		if sinceNotificationAt < event.NotificationAt {
+			events = append(events, event)
+		}
 	}
 	return events, nil
 }

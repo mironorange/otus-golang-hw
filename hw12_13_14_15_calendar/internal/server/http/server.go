@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage"
@@ -108,7 +109,12 @@ func createEventsHandler(l Logger, a Application) http.HandlerFunc {
 			return
 		}
 		if r.Method == "GET" {
-			events, err := a.GetEvents(context.TODO())
+			since := int32(-1)
+			sinceParam := r.URL.Query().Get("since_notification_at")
+			if val, err := strconv.Atoi(sinceParam); err != nil {
+				since = int32(val)
+			}
+			events, err := a.GetEvents(context.TODO(), since)
 			if err != nil {
 				w.WriteHeader(500)
 				l.Error(fmt.Sprint(err))
@@ -188,6 +194,7 @@ type Application interface {
 	) error
 	GetEvents(
 		ctx context.Context,
+		sinceNotificationAt int32,
 	) ([]storage.Event, error)
 	GetEventByUUID(
 		ctx context.Context,

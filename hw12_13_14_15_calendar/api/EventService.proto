@@ -70,7 +70,9 @@ message UpdateEventRequest {
 
 message UpdateEventResponse {}
 
-message GetEventsRequest {}
+message GetEventsRequest {
+    int32 sinceNotificationAt = 1;
+}
 
 message GetEventsResponse {
     repeated Event items = 1;

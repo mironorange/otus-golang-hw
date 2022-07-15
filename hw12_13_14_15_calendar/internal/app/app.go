@@ -37,6 +37,7 @@ type Storage interface {
 	) error
 	GetEvents(
 		ctx context.Context,
+		sinceNotificationAt int32,
 	) ([]storage.Event, error)
 	GetEventByUUID(
 		ctx context.Context,
@@ -103,6 +104,7 @@ func (a *App) GetEventByUUID(
 
 func (a *App) GetEvents(
 	ctx context.Context,
+	sinceNotificationAt int32,
 ) ([]storage.Event, error) {
-	return a.storage.GetEvents(ctx)
+	return a.storage.GetEvents(ctx, sinceNotificationAt)
 }

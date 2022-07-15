@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS "events"."events"
 
 	sqlEventSelectByID = `SELECT * FROM "events"."events" WHERE "uuid" = $1 LIMIT 1`
 
+	sqlGetEvents = `SELECT * FROM "events"."events" WHERE "notification_at" > $1`
+
 	sqlEventInsert = `-- Запрос создающий запись в базе данных о событии 
 INSERT INTO "events"."events"
 (uuid, summary, started_at, finished_at, description, user_uuid, notification_at)
@@ -153,9 +155,12 @@ func (s *Storage) UpdateEvent(
 }
 
 // Возвращает список соответствующих условию событий из хранилища.
-func (s *Storage) GetEvents(ctx context.Context) ([]storage.Event, error) {
+func (s *Storage) GetEvents(
+	ctx context.Context,
+	sinceNotificationAt int32,
+) ([]storage.Event, error) {
 	var events []storage.Event
-	err := s.dbConnect.Select(&events, `SELECT * FROM "events"."events"`)
+	err := s.dbConnect.Select(&events, sqlGetEvents, sinceNotificationAt)
 	return events, err
 }
 

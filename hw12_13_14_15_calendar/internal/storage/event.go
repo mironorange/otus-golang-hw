@@ -25,6 +25,7 @@ type EventStorage interface {
 	) error
 	GetEvents(
 		ctx context.Context,
+		sinceNotificationAt int32,
 	) ([]Event, error)
 	GetEventByUUID(
 		ctx context.Context,
