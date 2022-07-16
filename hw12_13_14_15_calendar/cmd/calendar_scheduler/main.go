@@ -2,7 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/broker"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/pb"
@@ -10,6 +14,28 @@ import (
 )
 
 func main() {
+	ctx, cancelFunc := signal.NotifyContext(context.Background(),
+		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	defer cancelFunc()
+
+	ticker := time.NewTicker(5 * time.Second)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case t := <-ticker.C:
+				fmt.Println("Tick at", t)
+				runPopulateNotificationQueue()
+			}
+		}
+	}()
+
+	<-ctx.Done()
+}
+
+func runPopulateNotificationQueue() {
 	// Воспользоваться gRPC соединением для того, чтобы получить события, о которых следует уведомить
 	grpcConnect, err := grpc.Dial(":50051", grpc.WithInsecure())
 	if err != nil {
