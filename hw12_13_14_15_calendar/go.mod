@@ -8,6 +8,7 @@ require (
 	github.com/lib/pq v1.2.0
 	github.com/mailru/easyjson v0.7.7
 	github.com/sirupsen/logrus v1.8.1
+	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.7.5
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.28.0

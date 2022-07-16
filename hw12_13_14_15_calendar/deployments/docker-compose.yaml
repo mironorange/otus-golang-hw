@@ -1,11 +1,19 @@
 version: "3"
 
-
-
 services:
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      # Панель управления RabbitMQ: (guest/guest)
+      - 15672:15672
+    networks:
+      - calendar
+
   postgres:
     container_name: postgresql
-    image: "postgres:11.16"
+    image: postgres:11.16
     environment:
       POSTGRES_USER: 'whoever'
       POSTGRES_PASSWORD: 'qwerty'
@@ -15,11 +23,11 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - postgres
+      - calendar
     restart: unless-stopped
 
 networks:
-  postgres:
+  calendar:
     driver: bridge
 
 #volumes:
