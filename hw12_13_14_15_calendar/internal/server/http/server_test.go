@@ -17,7 +17,7 @@ import (
 
 func TestCreateEvent(t *testing.T) {
 	logging := logger.New("INFO")
-	storage := memorystorage.New().(app.Storage)
+	storage := memorystorage.New().(app.EventStorage)
 	a := app.New(logging, storage)
 
 	mux := http.NewServeMux()

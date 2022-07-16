@@ -7,6 +7,7 @@ import (
 
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/app"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/pb"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,7 +19,7 @@ type WrapServer struct {
 	logger   app.Logger
 }
 
-func NewServer(addr string, logger app.Logger, app app.Storage) *WrapServer {
+func NewServer(addr string, logger app.Logger, app app.EventStorage) *WrapServer {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		logger.Info(fmt.Sprintf("%s", err))
@@ -40,11 +41,11 @@ func NewServer(addr string, logger app.Logger, app app.Storage) *WrapServer {
 
 type EventsService struct {
 	pb.UnimplementedCalendarServer
-	application app.Storage
+	application app.EventStorage
 	logger      app.Logger
 }
 
-func (s *EventsService) SetApp(a app.Storage) {
+func (s *EventsService) SetApp(a app.EventStorage) {
 	s.application = a
 }
 
@@ -90,16 +91,31 @@ func (s *EventsService) UpdateEvent(ctx context.Context, req *pb.UpdateEventRequ
 	return &pb.UpdateEventResponse{}, nil
 }
 
+func (s *EventsService) GetOldestEvents(
+	ctx context.Context,
+	req *pb.GetOldestEventsRequest,
+) (*pb.GetEventsResponse, error) {
+	s.logger.Info("Called GetOldestEvents")
+	events, err := s.application.GetOldestEvents(ctx, req.EndedAt)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error when trying to get oldest events")
+	}
+	return createGetEventsResponse(events), nil
+}
+
 func (s *EventsService) GetEvents(ctx context.Context, req *pb.GetEventsRequest) (*pb.GetEventsResponse, error) {
 	s.logger.Info("Called GetEvents")
 	events, err := s.application.GetEvents(ctx, req.SinceNotificationAt)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Error when trying to get events")
 	}
+	return createGetEventsResponse(events), nil
+}
 
-	es := make([]*pb.Event, 0, len(events))
+func createGetEventsResponse(events []storage.Event) *pb.GetEventsResponse {
+	items := make([]*pb.Event, 0, len(events))
 	for _, event := range events {
-		es = append(es, &pb.Event{
+		items = append(items, &pb.Event{
 			Uuid:           event.UUID,
 			Summary:        event.Summary,
 			StartedAt:      event.StartedAt,
@@ -109,8 +125,7 @@ func (s *EventsService) GetEvents(ctx context.Context, req *pb.GetEventsRequest)
 			NotificationAt: event.NotificationAt,
 		})
 	}
-
-	return &pb.GetEventsResponse{Items: es}, nil
+	return &pb.GetEventsResponse{Items: items}
 }
 
 func (s *EventsService) GetEvent(ctx context.Context, req *pb.GetEventRequest) (*pb.GetEventResponse, error) {

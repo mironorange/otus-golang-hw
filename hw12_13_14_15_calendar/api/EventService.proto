@@ -8,9 +8,10 @@ option go_package = "./;pb";
 service Calendar {
     rpc CreateEvent(CreateEventRequest) returns (CreateEventResponse) {}
     rpc UpdateEvent(UpdateEventRequest) returns (UpdateEventResponse) {}
-    rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}
     rpc GetEvent(GetEventRequest) returns (GetEventResponse) {}
     rpc DeleteEvent(DeleteEventRequest) returns (DeleteEventResponse) {}
+    rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}
+    rpc GetOldestEvents(GetOldestEventsRequest) returns (GetEventsResponse) {}
 }
 
 message Event {
@@ -73,6 +74,10 @@ message UpdateEventResponse {}
 
 message GetEventsRequest {
     int32 sinceNotificationAt = 1;
+}
+
+message GetOldestEventsRequest {
+    int32 endedAt = 1;
 }
 
 message GetEventsResponse {

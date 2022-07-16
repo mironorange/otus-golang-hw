@@ -77,7 +77,7 @@ func main() {
 	fmt.Println(event)
 
 	// Обновить запись о событии в базе данных
-	events, err := s.GetEvents(ctx)
+	events, err := s.GetEvents(ctx, -1)
 	if err != nil {
 		log.Fatal(err)
 	}

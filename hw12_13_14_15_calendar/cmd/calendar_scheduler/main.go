@@ -27,7 +27,7 @@ func main() {
 				return
 			case t := <-ticker.C:
 				fmt.Println("Tick at", t)
-				runPopulateNotificationQueue()
+				repeatRun()
 			}
 		}
 	}()
@@ -35,7 +35,7 @@ func main() {
 	<-ctx.Done()
 }
 
-func runPopulateNotificationQueue() {
+func repeatRun() {
 	// Воспользоваться gRPC соединением для того, чтобы получить события, о которых следует уведомить
 	grpcConnect, err := grpc.Dial(":50051", grpc.WithInsecure())
 	if err != nil {
@@ -72,5 +72,21 @@ func runPopulateNotificationQueue() {
 		if eventBody, err := eventMessage.MarshalJSON(); err == nil {
 			_ = b.Publish(context.TODO(), "events-exchange", "", eventBody)
 		}
+	}
+
+	now := time.Now().Unix()
+	ctx = context.TODO()
+	res, _ = client.GetOldestEvents(
+		ctx,
+		&pb.GetOldestEventsRequest{
+			EndedAt: int32(now),
+		},
+	)
+	for _, e := range res.Items {
+		fmt.Println(res)
+		_, err = client.DeleteEvent(ctx, &pb.DeleteEventRequest{
+			Uuid: e.Uuid,
+		})
+		fmt.Println(err)
 	}
 }

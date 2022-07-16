@@ -111,6 +111,19 @@ func (s *Storage) GetEvents(
 	return events, nil
 }
 
+// Возвращает список событий, закончившихся раньше чем наступило время endedAt.
+func (s *Storage) GetOldestEvents(ctx context.Context, endedAt int32) ([]storage.Event, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	events := make([]storage.Event, 0, len(s.events))
+	for _, event := range s.events {
+		if endedAt > event.FinishedAt {
+			events = append(events, event)
+		}
+	}
+	return events, nil
+}
+
 // Возвращает событие из хранилища по идентификатору.
 func (s *Storage) GetEventByUUID(ctx context.Context, uuid string) (storage.Event, error) {
 	s.mu.RLock()

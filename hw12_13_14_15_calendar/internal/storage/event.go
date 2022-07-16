@@ -27,6 +27,10 @@ type EventStorage interface {
 		ctx context.Context,
 		sinceNotificationAt int32,
 	) ([]Event, error)
+	GetOldestEvents(
+		ctx context.Context,
+		endedAt int32,
+	) ([]Event, error)
 	GetEventByUUID(
 		ctx context.Context,
 		uuid string,

@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS "events"."events"
 
 	sqlGetEvents = `SELECT * FROM "events"."events" WHERE "notification_at" > $1`
 
+	sqlGetOldestEvents = `SELECT * FROM "events"."events" WHERE "finished_at" < $1`
+
 	sqlEventInsert = `-- Запрос создающий запись в базе данных о событии 
 INSERT INTO "events"."events"
 (uuid, summary, started_at, finished_at, description, user_uuid, notification_at)
@@ -156,13 +158,13 @@ func (s *Storage) UpdateEvent(
 	return nil
 }
 
-// Возвращает список соответствующих условию событий из хранилища.
-func (s *Storage) GetEvents(
-	ctx context.Context,
-	sinceNotificationAt int32,
-) ([]storage.Event, error) {
-	var events []storage.Event
-	err := s.dbConnect.Select(&events, sqlGetEvents, sinceNotificationAt)
+func (s *Storage) GetEvents(ctx context.Context, sinceNotificationAt int32) (events []storage.Event, err error) {
+	err = s.dbConnect.Select(&events, sqlGetEvents, sinceNotificationAt)
+	return events, err
+}
+
+func (s *Storage) GetOldestEvents(ctx context.Context, endedAt int32) (events []storage.Event, err error) {
+	err = s.dbConnect.Select(&events, sqlGetOldestEvents, endedAt)
 	return events, err
 }
 
