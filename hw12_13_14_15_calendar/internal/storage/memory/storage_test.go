@@ -52,6 +52,48 @@ func TestCreateEvent(t *testing.T) {
 	require.Equal(t, 1, len(s.events))
 }
 
+func TestCreateAndDeleteEvent(t *testing.T) {
+	e := storage.Event{
+		UUID:           "1753b11e-0841-4b6e-9d24-c21ea1b2d83d",
+		Summary:        "Написать unit-тест и проверить создание события",
+		StartedAt:      1654070400,
+		FinishedAt:     1654074000,
+		Description:    "Написанный unit-тест должен проходить без ошибок и может быть доработан",
+		UserUUID:       "a6e592bc-8627-4e13-b4a6-d7072864602a",
+		NotificationAt: 1654070400,
+	}
+	s := Storage{
+		events: map[string]storage.Event{},
+	}
+	ctx := context.Background()
+
+	// Создать объект события можно в случае, если событие ранее не было создано.
+	err := s.CreateEvent(
+		ctx,
+		e.UUID,
+		e.Summary,
+		e.StartedAt,
+		e.FinishedAt,
+		e.Description,
+		e.UserUUID,
+		e.NotificationAt,
+	)
+	require.NoError(t, err)
+	require.Less(t, 0, len(s.events))
+
+	// Проверить успешно ли было создано событие
+	e, err = s.GetEventByUUID(ctx, e.UUID)
+	require.NoError(t, err)
+
+	// Удалить запись в хранилище
+	err = s.DeleteEvent(ctx, e.UUID)
+	require.NoError(t, err)
+
+	// Убедиться в том, что после удаления запись отсутствует
+	_, err = s.GetEventByUUID(ctx, e.UUID)
+	require.Error(t, err)
+}
+
 func TestUpdateEvent(t *testing.T) {
 	uuid := "1753b11e-0841-4b6e-9d24-c21ea1b2d83d"
 	event := storage.Event{

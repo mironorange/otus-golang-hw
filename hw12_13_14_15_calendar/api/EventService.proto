@@ -10,6 +10,7 @@ service Calendar {
     rpc UpdateEvent(UpdateEventRequest) returns (UpdateEventResponse) {}
     rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}
     rpc GetEvent(GetEventRequest) returns (GetEventResponse) {}
+    rpc DeleteEvent(DeleteEventRequest) returns (DeleteEventResponse) {}
 }
 
 message Event {
@@ -84,4 +85,11 @@ message GetEventRequest {
 
 message GetEventResponse {
     Event item = 1;
+}
+
+message DeleteEventRequest {
+    string uuid = 1;
+}
+
+message DeleteEventResponse {
 }

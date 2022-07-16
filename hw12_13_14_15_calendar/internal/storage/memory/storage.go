@@ -121,3 +121,11 @@ func (s *Storage) GetEventByUUID(ctx context.Context, uuid string) (storage.Even
 	}
 	return event, ErrNotExistEvent
 }
+
+func (s *Storage) DeleteEvent(ctx context.Context, uuid string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	delete(s.events, uuid)
+	return nil
+}

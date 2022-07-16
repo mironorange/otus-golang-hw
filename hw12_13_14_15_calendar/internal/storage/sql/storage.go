@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS "events"."events"
 
 	sqlEventSelectByID = `SELECT * FROM "events"."events" WHERE "uuid" = $1 LIMIT 1`
 
+	sqlEventDelete = `DELETE FROM "events"."events" WHERE "uuid" = $1 LIMIT 1`
+
 	sqlGetEvents = `SELECT * FROM "events"."events" WHERE "notification_at" > $1`
 
 	sqlEventInsert = `-- Запрос создающий запись в базе данных о событии 
@@ -178,4 +180,9 @@ func (s *Storage) GetEventByUUID(ctx context.Context, uuid string) (storage.Even
 		}
 	}
 	return event, nil
+}
+
+func (s *Storage) DeleteEvent(ctx context.Context, uuid string) error {
+	_, err := s.dbConnect.Exec(sqlEventDelete, uuid)
+	return err
 }

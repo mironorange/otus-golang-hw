@@ -43,6 +43,10 @@ type Storage interface {
 		ctx context.Context,
 		uuid string,
 	) (storage.Event, error)
+	DeleteEvent(
+		ctx context.Context,
+		uuid string,
+	) error
 }
 
 func New(logger Logger, storage Storage) *App {
@@ -107,4 +111,11 @@ func (a *App) GetEvents(
 	sinceNotificationAt int32,
 ) ([]storage.Event, error) {
 	return a.storage.GetEvents(ctx, sinceNotificationAt)
+}
+
+func (a *App) DeleteEvent(
+	ctx context.Context,
+	uuid string,
+) error {
+	return a.storage.DeleteEvent(ctx, uuid)
 }

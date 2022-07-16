@@ -31,6 +31,10 @@ type EventStorage interface {
 		ctx context.Context,
 		uuid string,
 	) (Event, error)
+	DeleteEvent(
+		ctx context.Context,
+		uuid string,
+	) error
 }
 
 type Event struct {

@@ -133,6 +133,16 @@ func (s *EventsService) GetEvent(ctx context.Context, req *pb.GetEventRequest) (
 	return &pb.GetEventResponse{Item: e}, nil
 }
 
+func (s *EventsService) DeleteEvent(ctx context.Context, req *pb.DeleteEventRequest) (*pb.DeleteEventResponse, error) {
+	s.logger.Info("Called DeleteEvent")
+	err := s.application.DeleteEvent(ctx, req.Uuid)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error when trying to delete event")
+	}
+
+	return &pb.DeleteEventResponse{}, nil
+}
+
 func (s *WrapServer) Start(ctx context.Context) error {
 	err := s.server.Serve(s.listener)
 	<-ctx.Done()

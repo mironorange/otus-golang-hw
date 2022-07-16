@@ -103,18 +103,24 @@ func createEventsHandler(l Logger, a Application) http.HandlerFunc {
 					}
 					return
 				}
+			} else if r.Method == "DELETE" {
+				if eventsRegexp.MatchString(r.URL.Path) {
+					submatch := eventsRegexp.FindStringSubmatch(r.URL.Path)
+					_ = a.DeleteEvent(context.Background(), submatch[1])
+					return
+				}
 			}
 
 			http.NotFound(w, r)
 			return
 		}
 		if r.Method == "GET" {
-			since := int32(-1)
+			since := -1
 			sinceParam := r.URL.Query().Get("since_notification_at")
-			if val, err := strconv.Atoi(sinceParam); err != nil {
-				since = int32(val)
+			if v, err := strconv.Atoi(sinceParam); err == nil {
+				since = v
 			}
-			events, err := a.GetEvents(context.TODO(), since)
+			events, err := a.GetEvents(context.TODO(), int32(since))
 			if err != nil {
 				w.WriteHeader(500)
 				l.Error(fmt.Sprint(err))
@@ -200,6 +206,10 @@ type Application interface {
 		ctx context.Context,
 		uuid string,
 	) (storage.Event, error)
+	DeleteEvent(
+		ctx context.Context,
+		uuid string,
+	) error
 }
 
 func NewServer(addr string, logger Logger, app Application) *WrapServer {
