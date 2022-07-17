@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/app"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
 	internalgrpc "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/grpcserver"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/server/http"
@@ -25,7 +26,7 @@ func init() {
 	flag.StringVar(&configFile, "config", "/etc/calendar/config.json", "Path to configuration file")
 }
 
-func NewStorage(c *Config) (s storage.EventStorage) {
+func NewStorage(c *config.CalendarConfiguration) (s storage.EventStorage) {
 	switch c.Events.Storage {
 	case storage.InMemoryStorageType:
 		return memorystorage.New()
@@ -51,21 +52,21 @@ func main() {
 	}
 
 	// Инициализирую конфигурацию приложения
-	config := NewConfig()
+	c := config.NewCalendarConfiguration()
 	ctxConfig := context.TODO()
-	if err := LoadConfig(ctxConfig, config, configFile); err != nil {
+	if err := config.LoadConfig(ctxConfig, c, configFile); err != nil {
 		log.Fatal(err)
 	}
 
 	// Инициализирую логирование приложения
-	logging := logger.New(config.Logger.Level)
+	logging := logger.New(c.Logger.Level)
 
 	// Инициализирую объект приложения
-	calendar := app.New(logging, NewStorage(config))
+	calendar := app.New(logging, NewStorage(c))
 
 	// Инициализирую сервер приложения
-	server := internalhttp.NewServer(net.JoinHostPort(config.Server.Host, config.Server.Port), logging, calendar)
-	grpcServer := internalgrpc.NewServer(net.JoinHostPort(config.RPCServer.Host, config.RPCServer.Port), logging, calendar)
+	server := internalhttp.NewServer(net.JoinHostPort(c.Server.Host, c.Server.Port), logging, calendar)
+	grpcServer := internalgrpc.NewServer(net.JoinHostPort(c.RPCServer.Host, c.RPCServer.Port), logging, calendar)
 
 	ctx, cancelFunc := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
