@@ -111,6 +111,21 @@ func (s *Storage) GetEvents(
 	return events, nil
 }
 
+func (s *Storage) GetEventsToBeNotified(ctx context.Context, from int32, to int32) ([]storage.Event, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	events := make([]storage.Event, 0, len(s.events))
+	if from > to {
+		return events, nil
+	}
+	for _, event := range s.events {
+		if from <= event.NotificationAt && event.NotificationAt <= to {
+			events = append(events, event)
+		}
+	}
+	return events, nil
+}
+
 // Возвращает список событий, закончившихся раньше чем наступило время endedAt.
 func (s *Storage) GetOldestEvents(ctx context.Context, endedAt int32) ([]storage.Event, error) {
 	s.mu.RLock()

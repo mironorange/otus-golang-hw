@@ -3,20 +3,24 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"net"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/broker"
+	mqbroker "github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/broker"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/pb"
 	"google.golang.org/grpc"
 )
 
-var configFile string
+var (
+	configFile     string
+	calendarClient pb.CalendarClient
+	configuration  *config.SchedulerConfiguration
+	broker         *mqbroker.Broker
+)
 
 func init() {
 	flag.StringVar(&configFile, "config", "/etc/calendar/scheduler.json", "Path to configuration file")
@@ -25,9 +29,9 @@ func init() {
 func main() {
 	flag.Parse()
 
-	c := config.NewSchedulerConfiguration()
+	configuration = config.NewSchedulerConfiguration()
 	ctxConfig := context.TODO()
-	if err := config.LoadConfig(ctxConfig, c, configFile); err != nil {
+	if err := config.LoadConfig(ctxConfig, configuration, configFile); err != nil {
 		log.Fatal(err)
 	}
 
@@ -35,48 +39,60 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancelFunc()
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(60 * time.Second)
+
+	// Воспользоваться gRPC соединением для того, чтобы получить события, о которых следует уведомить
+	grpcConnect, err := grpc.Dial(
+		net.JoinHostPort(configuration.EventsService.Host, configuration.EventsService.Port), grpc.WithInsecure(),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	calendarClient = pb.NewCalendarClient(grpcConnect)
+
+	broker, _ = mqbroker.New("events-broker", configuration.Queue.URI)
+	if err := broker.Connect(
+		context.TODO(),
+		configuration.Queue.ExchangeName,
+		configuration.Queue.ExchangeType,
+		configuration.Queue.QueueName,
+	); err != nil {
+		log.Fatal(err)
+	}
 
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case t := <-ticker.C:
-				fmt.Println("Tick at", t)
-				repeatRun(c)
+			case <-ticker.C:
+				submitForDispatch()
+				deleteOldEvents()
 			}
 		}
 	}()
 
 	<-ctx.Done()
+	_ = grpcConnect.Close()
+	_ = broker.Close(context.TODO())
 }
 
-func repeatRun(c *config.SchedulerConfiguration) {
-	// Воспользоваться gRPC соединением для того, чтобы получить события, о которых следует уведомить
-	grpcConnect, err := grpc.Dial(net.JoinHostPort(c.EventsService.Host, c.EventsService.Port), grpc.WithInsecure())
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer grpcConnect.Close()
-	client := pb.NewCalendarClient(grpcConnect)
-
-	b, _ := broker.New("events-broker", c.Queue.URI)
-	if err := b.Connect(context.TODO(), c.Queue.ExchangeName, c.Queue.ExchangeType, c.Queue.QueueName); err != nil {
-		log.Fatal(err)
-	}
-	defer b.Close(context.TODO())
+func submitForDispatch() {
+	now := time.Now().Unix()
+	notifyFrom := now - now%60
+	notifyTo := notifyFrom + 60
 
 	ctx := context.TODO()
-	res, err := client.GetEvents(
+	res, err := calendarClient.GetEventsToBeNotified(
 		ctx,
-		&pb.GetEventsRequest{
-			SinceNotificationAt: -1,
+		&pb.GetEventsToBeNotifiedRequest{
+			From: int32(notifyFrom),
+			To:   int32(notifyTo),
 		},
 	)
 	if err == nil {
 		for _, e := range res.Items {
-			eventMessage := broker.Event{
+			eventMessage := mqbroker.Event{
 				UUID:           e.Uuid,
 				Summary:        e.Summary,
 				StartedAt:      e.StartedAt,
@@ -86,26 +102,27 @@ func repeatRun(c *config.SchedulerConfiguration) {
 				NotificationAt: e.NotificationAt,
 			}
 			if body, err := eventMessage.MarshalJSON(); err == nil {
-				_ = b.Publish(context.TODO(), c.Queue.ExchangeName, "", body)
+				_ = broker.Publish(context.TODO(), configuration.Queue.ExchangeName, "", body)
 			}
 		}
 	}
+}
 
-	now := time.Now().Add(c.TTL).Unix()
-	ctx = context.TODO()
-	res, err = client.GetOldestEvents(
+func deleteOldEvents() {
+	deleteFrom := time.Now().Add(configuration.TTL).Unix()
+	ctx := context.TODO()
+	res, err := calendarClient.GetOldestEvents(
 		ctx,
 		&pb.GetOldestEventsRequest{
-			EndedAt: int32(now),
+			EndedAt: int32(deleteFrom),
 		},
 	)
-	if err == nil {
-		for _, e := range res.Items {
-			fmt.Println(res)
-			_, err = client.DeleteEvent(ctx, &pb.DeleteEventRequest{
-				Uuid: e.Uuid,
-			})
-			fmt.Println(err)
-		}
+	if err != nil {
+		return
+	}
+	for _, e := range res.Items {
+		_, _ = calendarClient.DeleteEvent(ctx, &pb.DeleteEventRequest{
+			Uuid: e.Uuid,
+		})
 	}
 }

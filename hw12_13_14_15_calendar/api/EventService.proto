@@ -12,6 +12,7 @@ service Calendar {
     rpc DeleteEvent(DeleteEventRequest) returns (DeleteEventResponse) {}
     rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}
     rpc GetOldestEvents(GetOldestEventsRequest) returns (GetEventsResponse) {}
+    rpc GetEventsToBeNotified(GetEventsToBeNotifiedRequest) returns (GetEventsResponse) {}
 }
 
 message Event {
@@ -78,6 +79,11 @@ message GetEventsRequest {
 
 message GetOldestEventsRequest {
     int32 endedAt = 1;
+}
+
+message GetEventsToBeNotifiedRequest {
+    int32 from = 1;
+    int32 to = 2;
 }
 
 message GetEventsResponse {

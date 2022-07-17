@@ -91,6 +91,15 @@ func (s *EventsService) UpdateEvent(ctx context.Context, req *pb.UpdateEventRequ
 	return &pb.UpdateEventResponse{}, nil
 }
 
+func (s *EventsService) GetEvents(ctx context.Context, req *pb.GetEventsRequest) (*pb.GetEventsResponse, error) {
+	s.logger.Info("Called GetEvents")
+	events, err := s.application.GetEvents(ctx, req.SinceNotificationAt)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error when trying to get events")
+	}
+	return createGetEventsResponse(events), nil
+}
+
 func (s *EventsService) GetOldestEvents(
 	ctx context.Context,
 	req *pb.GetOldestEventsRequest,
@@ -103,11 +112,14 @@ func (s *EventsService) GetOldestEvents(
 	return createGetEventsResponse(events), nil
 }
 
-func (s *EventsService) GetEvents(ctx context.Context, req *pb.GetEventsRequest) (*pb.GetEventsResponse, error) {
-	s.logger.Info("Called GetEvents")
-	events, err := s.application.GetEvents(ctx, req.SinceNotificationAt)
+func (s *EventsService) GetEventsToBeNotified(
+	ctx context.Context,
+	req *pb.GetEventsToBeNotifiedRequest,
+) (*pb.GetEventsResponse, error) {
+	s.logger.Info("Called GetEventsToBeNotified")
+	events, err := s.application.GetEventsToBeNotified(ctx, req.From, req.To)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "Error when trying to get events")
+		return nil, status.Error(codes.Internal, "Error when trying to get events to be notified")
 	}
 	return createGetEventsResponse(events), nil
 }

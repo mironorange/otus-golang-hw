@@ -28,6 +28,7 @@ type CalendarClient interface {
 	DeleteEvent(ctx context.Context, in *DeleteEventRequest, opts ...grpc.CallOption) (*DeleteEventResponse, error)
 	GetEvents(ctx context.Context, in *GetEventsRequest, opts ...grpc.CallOption) (*GetEventsResponse, error)
 	GetOldestEvents(ctx context.Context, in *GetOldestEventsRequest, opts ...grpc.CallOption) (*GetEventsResponse, error)
+	GetEventsToBeNotified(ctx context.Context, in *GetEventsToBeNotifiedRequest, opts ...grpc.CallOption) (*GetEventsResponse, error)
 }
 
 type calendarClient struct {
@@ -92,6 +93,15 @@ func (c *calendarClient) GetOldestEvents(ctx context.Context, in *GetOldestEvent
 	return out, nil
 }
 
+func (c *calendarClient) GetEventsToBeNotified(ctx context.Context, in *GetEventsToBeNotifiedRequest, opts ...grpc.CallOption) (*GetEventsResponse, error) {
+	out := new(GetEventsResponse)
+	err := c.cc.Invoke(ctx, "/event.Calendar/GetEventsToBeNotified", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CalendarServer is the server API for Calendar service.
 // All implementations must embed UnimplementedCalendarServer
 // for forward compatibility
@@ -102,6 +112,7 @@ type CalendarServer interface {
 	DeleteEvent(context.Context, *DeleteEventRequest) (*DeleteEventResponse, error)
 	GetEvents(context.Context, *GetEventsRequest) (*GetEventsResponse, error)
 	GetOldestEvents(context.Context, *GetOldestEventsRequest) (*GetEventsResponse, error)
+	GetEventsToBeNotified(context.Context, *GetEventsToBeNotifiedRequest) (*GetEventsResponse, error)
 	mustEmbedUnimplementedCalendarServer()
 }
 
@@ -126,6 +137,9 @@ func (UnimplementedCalendarServer) GetEvents(context.Context, *GetEventsRequest)
 }
 func (UnimplementedCalendarServer) GetOldestEvents(context.Context, *GetOldestEventsRequest) (*GetEventsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOldestEvents not implemented")
+}
+func (UnimplementedCalendarServer) GetEventsToBeNotified(context.Context, *GetEventsToBeNotifiedRequest) (*GetEventsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEventsToBeNotified not implemented")
 }
 func (UnimplementedCalendarServer) mustEmbedUnimplementedCalendarServer() {}
 
@@ -248,6 +262,24 @@ func _Calendar_GetOldestEvents_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Calendar_GetEventsToBeNotified_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEventsToBeNotifiedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CalendarServer).GetEventsToBeNotified(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/event.Calendar/GetEventsToBeNotified",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CalendarServer).GetEventsToBeNotified(ctx, req.(*GetEventsToBeNotifiedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Calendar_ServiceDesc is the grpc.ServiceDesc for Calendar service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -278,6 +310,10 @@ var Calendar_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetOldestEvents",
 			Handler:    _Calendar_GetOldestEvents_Handler,
+		},
+		{
+			MethodName: "GetEventsToBeNotified",
+			Handler:    _Calendar_GetEventsToBeNotified_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

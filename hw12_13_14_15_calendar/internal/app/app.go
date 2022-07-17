@@ -35,6 +35,11 @@ type EventStorage interface {
 		ctx context.Context,
 		endedAt int32,
 	) ([]storage.Event, error)
+	GetEventsToBeNotified(
+		ctx context.Context,
+		from int32,
+		to int32,
+	) ([]storage.Event, error)
 	GetEventByUUID(
 		ctx context.Context,
 		uuid string,
@@ -122,6 +127,14 @@ func (a *App) GetOldestEvents(
 	endedAt int32,
 ) ([]storage.Event, error) {
 	return a.storage.GetOldestEvents(ctx, endedAt)
+}
+
+func (a *App) GetEventsToBeNotified(
+	ctx context.Context,
+	from int32,
+	to int32,
+) ([]storage.Event, error) {
+	return a.storage.GetEventsToBeNotified(ctx, from, to)
 }
 
 func (a *App) DeleteEvent(

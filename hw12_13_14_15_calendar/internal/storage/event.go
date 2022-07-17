@@ -31,6 +31,11 @@ type EventStorage interface {
 		ctx context.Context,
 		endedAt int32,
 	) ([]Event, error)
+	GetEventsToBeNotified(
+		ctx context.Context,
+		from int32,
+		to int32,
+	) ([]Event, error)
 	GetEventByUUID(
 		ctx context.Context,
 		uuid string,
