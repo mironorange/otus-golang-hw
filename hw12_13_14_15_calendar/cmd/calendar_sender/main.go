@@ -4,12 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
 	"log"
 	"os/signal"
 	"syscall"
 
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/broker"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/logger"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/sender"
 )
@@ -32,7 +32,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	receiver, _ := broker.New("events-broker", c.Queue.Uri)
+	receiver, _ := broker.New("events-broker", c.Queue.URI)
 
 	if err := receiver.Connect(ctx, c.Queue.ExchangeName, c.Queue.ExchangeType, c.Queue.QueueName); err != nil {
 		log.Fatal(err)

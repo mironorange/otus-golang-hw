@@ -64,7 +64,7 @@ type EventsServiceConf struct {
 }
 
 type QueueConf struct {
-	Uri          string `config:"queue-uri"`
+	URI          string `config:"queue-uri"`
 	ExchangeName string `config:"queue-exchangename"`
 	ExchangeType string `config:"queue-exchangetype"`
 	QueueName    string `config:"queue-queuename"`
@@ -96,7 +96,7 @@ func NewSchedulerConfiguration() *SchedulerConfiguration {
 			Timeout: time.Second * 3,
 		},
 		Queue: QueueConf{
-			Uri:          "amqp://guest:guest@localhost:5672/",
+			URI:          "amqp://guest:guest@localhost:5672/",
 			ExchangeName: "events-exchange",
 			ExchangeType: "direct",
 			QueueName:    "events",
@@ -111,7 +111,7 @@ func NewSenderConfiguration() *SenderConfiguration {
 			Level: "info",
 		},
 		Queue: QueueConf{
-			Uri:          "amqp://guest:guest@localhost:5672/",
+			URI:          "amqp://guest:guest@localhost:5672/",
 			ExchangeName: "events-exchange",
 			ExchangeType: "direct",
 			QueueName:    "events",

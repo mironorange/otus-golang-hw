@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
 	"log"
 	"net"
 	"os/signal"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/broker"
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/config"
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/pb"
 	"google.golang.org/grpc"
 )
@@ -24,7 +24,6 @@ func init() {
 
 func main() {
 	flag.Parse()
-
 
 	c := config.NewSchedulerConfiguration()
 	ctxConfig := context.TODO()
@@ -62,7 +61,7 @@ func repeatRun(c *config.SchedulerConfiguration) {
 	defer grpcConnect.Close()
 	client := pb.NewCalendarClient(grpcConnect)
 
-	b, _ := broker.New("events-broker", c.Queue.Uri)
+	b, _ := broker.New("events-broker", c.Queue.URI)
 	if err := b.Connect(context.TODO(), c.Queue.ExchangeName, c.Queue.ExchangeType, c.Queue.QueueName); err != nil {
 		log.Fatal(err)
 	}
