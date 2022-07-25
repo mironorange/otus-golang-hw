@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"sync"
+
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage"
 )
 
 var (
@@ -12,54 +14,15 @@ var (
 	ErrNotExistEvent   = errors.New("event not exist")
 )
 
-type Event struct {
-	// UUID - уникальный идентификатор события.
-	UUID string
-	// Заголовок - короткий текст.
-	Summary string
-	// Дата и время начала события.
-	StartedAt string
-	// Дата и время начала события.
-	FinishedAt string
-	// Описание события - длинный текст, опционально.
-	Description string
-	// UUID пользователя, владельца события.
-	UserUUID string
-	// Дата и время уведомления о событии.
-	NotificationAt string
-}
-
-type EventUpdateAttributes struct {
-	// Заголовок - короткий текст.
-	Summary string
-	// Дата и время начала события.
-	StartedAt string
-	// Дата и время начала события.
-	FinishedAt string
-	// Описание события - длинный текст, опционально.
-	Description string
-	// Get пользователя, владельца события.
-	UserUUID string
-	// Дата и время уведомления о событии.
-	NotificationAt string
-}
-
-type EventStorage interface {
-	Create(attributes Event) (bool, error)
-	Update(uuid string, attributes EventUpdateAttributes) (bool, error)
-	Select() (map[string]Event, error)
-	Get(uuid string) (Event, error)
-}
-
 type Storage struct {
 	mu     sync.RWMutex
-	events map[string]Event
+	events map[string]storage.Event
 }
 
-func New() EventStorage {
+func New() storage.EventStorage {
 	return &Storage{
-		mu:     sync.RWMutex{},
-		events: map[string]Event{},
+		sync.RWMutex{},
+		make(map[string]storage.Event),
 	}
 }
 
@@ -72,58 +35,129 @@ func (s *Storage) Close(ctx context.Context) error {
 }
 
 // Создает новое событие.
-func (s *Storage) Create(e Event) (bool, error) {
+func (s *Storage) CreateEvent(
+	ctx context.Context,
+	uuid string,
+	summary string,
+	startedAt int32,
+	finishedAt int32,
+	description string,
+	userUUID string,
+	notificationAt int32,
+) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, ok := s.events[e.UUID]; ok {
-		return false, ErrFailCreateEvent
+	event := storage.Event{
+		UUID:           uuid,
+		Summary:        summary,
+		StartedAt:      startedAt,
+		FinishedAt:     finishedAt,
+		Description:    description,
+		UserUUID:       userUUID,
+		NotificationAt: notificationAt,
 	}
-	s.events[e.UUID] = e
+	if _, ok := s.events[event.UUID]; ok {
+		return ErrFailCreateEvent
+	}
+	s.events[event.UUID] = event
 
-	return true, nil
+	return nil
 }
 
 // Обновляет существующее в хранилище событие.
-func (s *Storage) Update(uuid string, attributes EventUpdateAttributes) (bool, error) {
+func (s *Storage) UpdateEvent(
+	ctx context.Context,
+	uuid string,
+	summary string,
+	startedAt int32,
+	finishedAt int32,
+	description string,
+	userUUID string,
+	notificationAt int32,
+) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	event, ok := s.events[uuid]
 	if !ok {
-		return false, ErrFailUpdateEvent
+		return ErrFailUpdateEvent
 	}
-	event.Summary = attributes.Summary
-	event.StartedAt = attributes.StartedAt
-	event.FinishedAt = attributes.FinishedAt
-	event.Description = attributes.Description
-	event.UserUUID = attributes.UserUUID
-	event.NotificationAt = attributes.NotificationAt
+	event.Summary = summary
+	event.StartedAt = startedAt
+	event.FinishedAt = finishedAt
+	event.Description = description
+	event.UserUUID = userUUID
+	event.NotificationAt = notificationAt
 
 	s.events[uuid] = event
 
-	return true, nil
+	return nil
 }
 
 // Возвращает список соответствующих условию событий из хранилища, проиндексированные по идентификатору.
-func (s *Storage) Select() (map[string]Event, error) {
+func (s *Storage) GetEvents(
+	ctx context.Context,
+	sinceNotificationAt int32,
+) ([]storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	events := make([]storage.Event, 0, len(s.events))
+	for _, event := range s.events {
+		if sinceNotificationAt < event.NotificationAt {
+			events = append(events, event)
+		}
+	}
+	return events, nil
+}
 
-	return s.events, nil
+func (s *Storage) GetEventsToBeNotified(ctx context.Context, from int32, to int32) ([]storage.Event, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	events := make([]storage.Event, 0, len(s.events))
+	if from > to {
+		return events, nil
+	}
+	for _, event := range s.events {
+		if from <= event.NotificationAt && event.NotificationAt <= to {
+			events = append(events, event)
+		}
+	}
+	return events, nil
+}
+
+// Возвращает список событий, закончившихся раньше чем наступило время endedAt.
+func (s *Storage) GetOldestEvents(ctx context.Context, endedAt int32) ([]storage.Event, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	events := make([]storage.Event, 0, len(s.events))
+	for _, event := range s.events {
+		if endedAt > event.FinishedAt {
+			events = append(events, event)
+		}
+	}
+	return events, nil
 }
 
 // Возвращает событие из хранилища по идентификатору.
-func (s *Storage) Get(uuid string) (Event, error) {
+func (s *Storage) GetEventByUUID(ctx context.Context, uuid string) (storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
-	var event Event
-	var ok bool
-
-	if event, ok = s.events[uuid]; ok {
-		return event, nil
+	var event storage.Event
+	if e, ok := s.events[uuid]; ok {
+		return e, nil
 	}
-
 	return event, ErrNotExistEvent
+}
+
+func (s *Storage) DeleteEvent(ctx context.Context, uuid string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	delete(s.events, uuid)
+	return nil
+}
+
+func (s *Storage) IsMissingEventError(err error) bool {
+	return errors.Is(err, ErrNotExistEvent)
 }

@@ -2,24 +2,149 @@ package app
 
 import (
 	"context"
+
+	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage"
 )
 
-type App struct { // TODO
+type EventStorage interface {
+	CreateEvent(
+		ctx context.Context,
+		uuid string,
+		summary string,
+		startedAt int32,
+		finishedAt int32,
+		description string,
+		userUUID string,
+		notificationAt int32,
+	) error
+	UpdateEvent(
+		ctx context.Context,
+		uuid string,
+		summary string,
+		startedAt int32,
+		finishedAt int32,
+		description string,
+		userUUID string,
+		notificationAt int32,
+	) error
+	GetEvents(
+		ctx context.Context,
+		sinceNotificationAt int32,
+	) ([]storage.Event, error)
+	GetOldestEvents(
+		ctx context.Context,
+		endedAt int32,
+	) ([]storage.Event, error)
+	GetEventsToBeNotified(
+		ctx context.Context,
+		from int32,
+		to int32,
+	) ([]storage.Event, error)
+	GetEventByUUID(
+		ctx context.Context,
+		uuid string,
+	) (storage.Event, error)
+	DeleteEvent(
+		ctx context.Context,
+		uuid string,
+	) error
+	IsMissingEventError(err error) bool
+}
+
+type App struct {
+	storage EventStorage
 }
 
 type Logger interface {
 	Info(msg string)
 }
 
-type Storage interface { // TODO
+func New(logger Logger, storage EventStorage) *App {
+	return &App{
+		storage: storage,
+	}
 }
 
-func New(logger Logger, storage Storage) *App {
-	return &App{}
+func (a *App) CreateEvent(
+	ctx context.Context,
+	uuid string,
+	summary string,
+	startedAt int32,
+	finishedAt int32,
+	description string,
+	userUUID string,
+	notificationAt int32,
+) error {
+	return a.storage.CreateEvent(
+		ctx,
+		uuid,
+		summary,
+		startedAt,
+		finishedAt,
+		description,
+		userUUID,
+		notificationAt,
+	)
 }
 
-func (a *App) CreateEvent(ctx context.Context, id, title string) error {
-	// TODO
-	return nil
-	// return a.storage.CreateEvent(storage.Event{ID: id, Title: title})
+func (a *App) UpdateEvent(
+	ctx context.Context,
+	uuid string,
+	summary string,
+	startedAt int32,
+	finishedAt int32,
+	description string,
+	userUUID string,
+	notificationAt int32,
+) error {
+	return a.storage.UpdateEvent(
+		ctx,
+		uuid,
+		summary,
+		startedAt,
+		finishedAt,
+		description,
+		userUUID,
+		notificationAt,
+	)
+}
+
+func (a *App) GetEventByUUID(
+	ctx context.Context,
+	uuid string,
+) (storage.Event, error) {
+	return a.storage.GetEventByUUID(ctx, uuid)
+}
+
+func (a *App) GetEvents(
+	ctx context.Context,
+	sinceNotificationAt int32,
+) ([]storage.Event, error) {
+	return a.storage.GetEvents(ctx, sinceNotificationAt)
+}
+
+func (a *App) GetOldestEvents(
+	ctx context.Context,
+	endedAt int32,
+) ([]storage.Event, error) {
+	return a.storage.GetOldestEvents(ctx, endedAt)
+}
+
+func (a *App) GetEventsToBeNotified(
+	ctx context.Context,
+	from int32,
+	to int32,
+) ([]storage.Event, error) {
+	return a.storage.GetEventsToBeNotified(ctx, from, to)
+}
+
+func (a *App) DeleteEvent(
+	ctx context.Context,
+	uuid string,
+) error {
+	return a.storage.DeleteEvent(ctx, uuid)
+}
+
+func (a *App) IsMissingEventError(err error) bool {
+	return a.storage.IsMissingEventError(err)
 }
