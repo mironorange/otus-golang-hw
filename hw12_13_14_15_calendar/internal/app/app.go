@@ -48,6 +48,7 @@ type EventStorage interface {
 		ctx context.Context,
 		uuid string,
 	) error
+	IsMissingEventError(err error) bool
 }
 
 type App struct {
@@ -142,4 +143,8 @@ func (a *App) DeleteEvent(
 	uuid string,
 ) error {
 	return a.storage.DeleteEvent(ctx, uuid)
+}
+
+func (a *App) IsMissingEventError(err error) bool {
+	return a.storage.IsMissingEventError(err)
 }

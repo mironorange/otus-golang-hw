@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"regexp"
-	"strconv"
 	"time"
 
 	"github.com/mironorange/otus-golang-hw/hw12_13_14_15_calendar/internal/storage"
@@ -16,6 +15,7 @@ var eventsRegexp = regexp.MustCompile(`\/events\/(\w+\-\w+\-\w+\-\w+\-\w+)`)
 
 type WrapServer struct {
 	server http.Server
+	logger Logger
 }
 
 type StatusRecorder struct {
@@ -48,20 +48,26 @@ func createEventsHandler(l Logger, a Application) http.HandlerFunc {
 						context.Background(),
 						submatch[1],
 					)
-					if err == nil {
-						e := Event{
-							UUID:           event.UUID,
-							Summary:        event.Summary,
-							StartedAt:      event.StartedAt,
-							FinishedAt:     event.FinishedAt,
-							Description:    event.Description,
-							UserUUID:       event.UserUUID,
-							NotificationAt: event.NotificationAt,
+					if err != nil {
+						if a.IsMissingEventError(err) {
+							http.NotFound(w, r)
+							return
 						}
-						jsonEvent, _ := e.MarshalJSON()
-						w.Write(jsonEvent)
+						w.WriteHeader(500)
 						return
 					}
+					e := Event{
+						UUID:           event.UUID,
+						Summary:        event.Summary,
+						StartedAt:      event.StartedAt,
+						FinishedAt:     event.FinishedAt,
+						Description:    event.Description,
+						UserUUID:       event.UserUUID,
+						NotificationAt: event.NotificationAt,
+					}
+					jsonEvent, _ := e.MarshalJSON()
+					w.Write(jsonEvent)
+					return
 				}
 			} else if r.Method == "PUT" {
 				// PUT /events/a6e592bc-8627-4e13-b4a6-d7072864602a.
@@ -74,7 +80,11 @@ func createEventsHandler(l Logger, a Application) http.HandlerFunc {
 					)
 					if err != nil {
 						l.Error(fmt.Sprint(err))
-						http.NotFound(w, r)
+						if a.IsMissingEventError(err) {
+							http.NotFound(w, r)
+							return
+						}
+						w.WriteHeader(500)
 						return
 					}
 					attrs := EventUpdateAttributes{}
@@ -115,12 +125,7 @@ func createEventsHandler(l Logger, a Application) http.HandlerFunc {
 			return
 		}
 		if r.Method == "GET" {
-			since := -1
-			sinceParam := r.URL.Query().Get("since_notification_at")
-			if v, err := strconv.Atoi(sinceParam); err == nil {
-				since = v
-			}
-			events, err := a.GetEvents(context.TODO(), int32(since))
+			events, err := a.GetEvents(context.TODO(), int32(-1))
 			if err != nil {
 				w.WriteHeader(500)
 				l.Error(fmt.Sprint(err))
@@ -210,6 +215,7 @@ type Application interface {
 		ctx context.Context,
 		uuid string,
 	) error
+	IsMissingEventError(err error) bool
 }
 
 func NewServer(addr string, logger Logger, app Application) *WrapServer {
@@ -227,10 +233,12 @@ func NewServer(addr string, logger Logger, app Application) *WrapServer {
 			ReadTimeout:  3 * time.Second,
 			WriteTimeout: 3 * time.Second,
 		},
+		logger: logger,
 	}
 }
 
 func (s *WrapServer) Start(ctx context.Context) error {
+	s.logger.Info(fmt.Sprintf("listen http server: %s", s.server.Addr))
 	if err := s.server.ListenAndServe(); err != nil {
 		return err
 	}

@@ -157,3 +157,7 @@ func (s *Storage) DeleteEvent(ctx context.Context, uuid string) error {
 	delete(s.events, uuid)
 	return nil
 }
+
+func (s *Storage) IsMissingEventError(err error) bool {
+	return errors.Is(err, ErrNotExistEvent)
+}

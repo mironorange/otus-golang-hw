@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"os/signal"
@@ -42,14 +43,15 @@ func main() {
 	ticker := time.NewTicker(60 * time.Second)
 
 	// Воспользоваться gRPC соединением для того, чтобы получить события, о которых следует уведомить
-	grpcConnect, err := grpc.Dial(
-		net.JoinHostPort(configuration.EventsService.Host, configuration.EventsService.Port), grpc.WithInsecure(),
-	)
+	calendarAddr := net.JoinHostPort(configuration.EventsService.Host, configuration.EventsService.Port)
+	log.Println(fmt.Sprintf("Connect to Calendar: %s", calendarAddr))
+	grpcConnect, err := grpc.Dial(calendarAddr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
 	calendarClient = pb.NewCalendarClient(grpcConnect)
 
+	log.Println(fmt.Sprintf("Connect to Broker: %s", configuration.Queue.URI))
 	broker, _ = mqbroker.New("events-broker", configuration.Queue.URI)
 	if err := broker.Connect(
 		context.TODO(),

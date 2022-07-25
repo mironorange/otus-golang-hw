@@ -32,6 +32,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
+	log.Println(fmt.Sprintf("Connect to Broker: %s", c.Queue.URI))
 	receiver, _ := broker.New("events-broker", c.Queue.URI)
 
 	if err := receiver.Connect(ctx, c.Queue.ExchangeName, c.Queue.ExchangeType, c.Queue.QueueName); err != nil {

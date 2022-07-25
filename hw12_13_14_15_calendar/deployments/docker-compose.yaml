@@ -1,44 +1,81 @@
 version: "3"
 
 services:
+  calendar:
+    container_name: calendar-api
+    build:
+      context: ..
+      dockerfile: ./build/calendar/Dockerfile
+    ports:
+      - 8080:8080     # HTTP API
+      - 50051:50051   # gRPC API
+    environment:
+      - BROKER_QUEUE_URI=amqp://guest:guest@rabbitmq:5672/
+      - SERVER_PORT=8080
+      - EVENTS_STORAGE=database
+      - DATABASE_DRIVER=database
+      - DATABASE_DSN=postgres://whoever:qwerty@postgres/calendar?sslmode=disable
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - calendarnet
+
+  scheduler:
+    container_name: calendar-scheduler
+    build:
+      context: ..
+      dockerfile: ./build/calendar_scheduler/Dockerfile
+    environment:
+      - QUEUE_URI=amqp://guest:guest@rabbitmq:5672
+      - EVENTSSERVICE_PORT=50051
+      - EVENTSSERVICE_HOST=calendar
+    depends_on:
+      - postgres
+      - rabbitmq
+      - calendar
+    networks:
+      - calendarnet
+    restart: on-failure
+
+  sender:
+    container_name: calendar-sender
+    build:
+      context: ..
+      dockerfile: ./build/calendar_sender/Dockerfile
+    environment:
+      - QUEUE_URI=amqp://guest:guest@rabbitmq:5672
+      - EVENTSSERVICE_PORT=calendar
+      - EVENTSSERVICE_HOST=50051
+    depends_on:
+      - postgres
+      - rabbitmq
+      - calendar
+    networks:
+      - calendarnet
+    restart: on-failure
+
   rabbitmq:
-    container_name: rabbitmq
+    container_name: calendar-rabbitmq
     image: rabbitmq:3-management
     ports:
       - 5672:5672
-      # Панель управления RabbitMQ: (guest/guest)
-      - 15672:15672
+      - 15672:15672 # Панель управления RabbitMQ: (guest/guest)
     networks:
-      - calendar
+      - calendarnet
 
   postgres:
-    container_name: postgresql
+    container_name: calendar-postgresql
     image: postgres:11.16
     environment:
       POSTGRES_USER: 'whoever'
       POSTGRES_PASSWORD: 'qwerty'
-#      PGDATA: /data/postgres
-#    volumes:
-#      - postgres:/data/postgres
     ports:
-      - "5432:5432"
+      - 5432:5432
     networks:
-      - calendar
+      - calendarnet
     restart: unless-stopped
 
 networks:
-  calendar:
+  calendarnet:
     driver: bridge
-
-#volumes:
-#  postgres:
-
-# docker exec -it 44332ecf6d8c bash
-# psql -U whoever -W
-# \l - show databases
-
-# create database test;
-# alter user whoever with encrypted password 'qwerty';
-# grant all privileges on database test to whoever;
-# \connect test;
-# CREATE SCHEMA testschema;

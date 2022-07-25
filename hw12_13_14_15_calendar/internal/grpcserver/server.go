@@ -171,6 +171,7 @@ func (s *EventsService) DeleteEvent(ctx context.Context, req *pb.DeleteEventRequ
 }
 
 func (s *WrapServer) Start(ctx context.Context) error {
+	s.logger.Info(fmt.Sprintf("listen rpc server: %s", s.listener.Addr()))
 	err := s.server.Serve(s.listener)
 	<-ctx.Done()
 	return err

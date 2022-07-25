@@ -44,6 +44,7 @@ type EventStorage interface {
 		ctx context.Context,
 		uuid string,
 	) error
+	IsMissingEventError(err error) bool
 }
 
 type Event struct {

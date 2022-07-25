@@ -2,6 +2,8 @@ package sqlstorage
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
 	// Необходимо импортировать пакет для того чтобы подключился драйвер pq.
@@ -30,7 +32,7 @@ CREATE TABLE IF NOT EXISTS "events"."events"
 	-- Описание события
 	"description" varchar not null,
 	-- Get пользователя, владельца события
-	"user_uuid" int not null,
+	"user_uuid" varchar not null,
 	-- Unix timestamp даты и времени уведомления о событии.
 	"notification_at" int not null
 );`
@@ -39,7 +41,7 @@ CREATE TABLE IF NOT EXISTS "events"."events"
 
 	sqlEventDelete = `DELETE FROM "events"."events" WHERE "uuid" = $1 LIMIT 1`
 
-	sqlGetEvents = `SELECT * FROM "events"."events" WHERE "notification_at" > $1`
+	sqlGetEvents = `SELECT * FROM "events"."events"`
 
 	sqlGetOldestEvents = `SELECT * FROM "events"."events" WHERE "finished_at" < $1`
 
@@ -109,7 +111,6 @@ func (s *Storage) CreateEvent(
 	userUUID string,
 	notificationAt int32,
 ) error {
-	tx := s.dbConnect.MustBegin()
 	event := storage.Event{
 		UUID:           uuid,
 		Summary:        summary,
@@ -119,11 +120,7 @@ func (s *Storage) CreateEvent(
 		UserUUID:       userUUID,
 		NotificationAt: notificationAt,
 	}
-	if _, err := tx.NamedExec(sqlEventInsert, &event); err != nil {
-		_ = tx.Rollback()
-		return err
-	}
-	if err := tx.Commit(); err != nil {
+	if _, err := s.dbConnect.NamedExec(sqlEventInsert, &event); err != nil {
 		return err
 	}
 	return nil
@@ -140,7 +137,6 @@ func (s *Storage) UpdateEvent(
 	userUUID string,
 	notificationAt int32,
 ) error {
-	tx := s.dbConnect.MustBegin()
 	args := []interface{}{
 		uuid,
 		summary,
@@ -150,18 +146,14 @@ func (s *Storage) UpdateEvent(
 		userUUID,
 		notificationAt,
 	}
-	if _, err := tx.Exec(sqlEventUpdate, args...); err != nil {
-		_ = tx.Rollback()
-		return err
-	}
-	if err := tx.Commit(); err != nil {
+	if _, err := s.dbConnect.Exec(sqlEventUpdate, args...); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *Storage) GetEvents(ctx context.Context, sinceNotificationAt int32) (events []storage.Event, err error) {
-	err = s.dbConnect.Select(&events, sqlGetEvents, sinceNotificationAt)
+	err = s.dbConnect.Select(&events, sqlGetEvents)
 	return events, err
 }
 
@@ -175,20 +167,13 @@ func (s *Storage) GetOldestEvents(ctx context.Context, endedAt int32) (events []
 	return events, err
 }
 
-func (s *Storage) GetEventByUUID(ctx context.Context, uuid string) (storage.Event, error) {
-	var event storage.Event
-	rows, err := s.dbConnect.Queryx(sqlEventSelectByID, uuid)
-	if err != nil {
-		return storage.Event{}, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		err = rows.StructScan(&event)
-		if err != nil {
-			return storage.Event{}, err
-		}
-	}
-	return event, nil
+func (s *Storage) GetEventByUUID(ctx context.Context, uuid string) (event storage.Event, err error) {
+	err = s.dbConnect.Get(&event, sqlEventSelectByID, uuid)
+	return event, err
+}
+
+func (s *Storage) IsMissingEventError(err error) bool {
+	return errors.Is(err, sql.ErrNoRows)
 }
 
 func (s *Storage) DeleteEvent(ctx context.Context, uuid string) error {
